@@ -17,7 +17,7 @@ export function BrandShell({ children, backTo, compact = false }: BrandShellProp
       <div className="ambient ambient-two" />
       <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 sm:py-7">
         <Link to="/" className="group flex items-center gap-3" aria-label="StudyCircle home">
-          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[var(--brand-dark-blue)] text-white shadow-[0_10px_24px_rgba(45,71,151,.25)] transition group-hover:-rotate-6">
+          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[var(--brand-dark-blue)] text-white shadow-sm transition group-hover:-rotate-6">
             <Orbit className="h-5 w-5" />
           </span>
           <span>
@@ -36,8 +36,8 @@ export function BrandShell({ children, backTo, compact = false }: BrandShellProp
             </Link>
           </Button>
         ) : (
-          <span className="rounded-full border border-[#dfe5f5] bg-white/60 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--brand-blue)] backdrop-blur">
-            Community demo
+          <span className="rounded-full border border-[#dfe5f5] bg-white px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--brand-blue)]">
+            Student community
           </span>
         )}
       </header>
@@ -52,4 +52,3 @@ export function BrandShell({ children, backTo, compact = false }: BrandShellProp
     </div>
   );
 }
-

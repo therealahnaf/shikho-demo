@@ -2,7 +2,7 @@ import { getCredentials } from "@/lib/storage";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-export type DemoUser = {
+export type User = {
   id: string;
   username: string;
   display_name: string;
@@ -13,13 +13,98 @@ export type DemoUser = {
   created_at: string;
 };
 
-export type CreateDemoUserInput = {
+export type CreateUserInput = {
   username: string;
   display_name: string;
   class_level: "class_10";
   curriculum: "nctb_bangla";
   preferred_subject: "mathematics";
   school_name?: string | null;
+};
+
+export type MemberUser = Pick<User, "id" | "username" | "display_name">;
+
+export type Membership = {
+  id: string;
+  circle_id: string;
+  circle_name: string;
+  weekly_points: number;
+  roadmap_position: number;
+  personal_contribution: number;
+  joined_at: string;
+};
+
+export type CircleRecommendation = {
+  id: string;
+  name: string;
+  class_level: string;
+  subject: string;
+  description: string;
+  member_count: number;
+  mission: { title: string; target: number; progress: number };
+};
+
+export type CircleHome = {
+  circle: {
+    id: string;
+    name: string;
+    class_level: string;
+    subject: string;
+    description: string;
+    member_count: number;
+  };
+  membership: Membership;
+  mission: {
+    title: string;
+    target: number;
+    progress: number;
+    percent_complete: number;
+    ends_at: string;
+    student_contribution: number;
+  };
+  daily_quest: {
+    title: string;
+    target: number;
+    progress: number;
+    percent_complete: number;
+    local_date: string;
+    is_complete: boolean;
+    time_remaining_seconds: number;
+  };
+  streak: { days: number };
+  mentor: MemberUser | null;
+  roadmap: {
+    id: string;
+    title: string;
+    starts_at: string;
+    ends_at: string;
+    checkpoints: Array<{
+      id: string;
+      position: number;
+      title: string;
+      activity_type: "review" | "lesson" | "quiz" | "challenge";
+      topic_key: string;
+      status: "completed" | "current" | "locked";
+    }>;
+    member_positions: Array<{ user: MemberUser; position: number }>;
+  };
+  leaderboard: {
+    entries: Array<{
+      rank: number;
+      user: MemberUser;
+      weekly_points: number;
+      is_current_user: boolean;
+      is_mentor: boolean;
+    }>;
+    current_user_rank: number;
+  };
+  activity_feed: Array<{
+    id: string;
+    event_type: "checkpoint_completed" | "rank_changed" | "member_joined";
+    actor: MemberUser | null;
+    payload: Record<string, unknown>;
+    created_at: string;
+  }>;
 };
 
 export type ApiErrorBody = {
@@ -72,20 +157,44 @@ async function request<T>(
 }
 
 export const api = {
-  createDemoUser(input: CreateDemoUserInput) {
-    return request<{ user: DemoUser; access_key: string }>("/api/v1/demo-users", {
+  createUser(input: CreateUserInput) {
+    return request<{ user: User; access_key: string }>("/api/v1/demo-users", {
       method: "POST",
       body: JSON.stringify(input),
     });
   },
   verify(username: string, accessKey: string) {
-    return request<DemoUser>("/api/v1/demo-sessions/verify", {
+    return request<User>("/api/v1/demo-sessions/verify", {
       method: "POST",
       body: JSON.stringify({ username, access_key: accessKey }),
     });
   },
   getMe() {
-    return request<DemoUser>("/api/v1/me", {}, true);
+    return request<User>("/api/v1/me", {}, true);
+  },
+  getMembership() {
+    return request<{ membership: Membership | null }>(
+      "/api/v1/me/circle-membership",
+      {},
+      true,
+    );
+  },
+  getRecommendedCircle() {
+    return request<{ data: CircleRecommendation | null; reason: string | null }>(
+      "/api/v1/circles/recommended",
+      {},
+      true,
+    );
+  },
+  joinCircle(circleId: string) {
+    return request<{ membership: Membership; circle_home_path: string }>(
+      `/api/v1/circles/${circleId}/join`,
+      { method: "POST" },
+      true,
+    );
+  },
+  getCircleHome(circleId: string) {
+    return request<CircleHome>(`/api/v1/circles/${circleId}/home`, {}, true);
   },
 };
 

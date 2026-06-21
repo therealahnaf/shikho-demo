@@ -1,27 +1,28 @@
-# StudyCircle Demo
+# StudyCircle
 
-Phase 0 implements a lightweight demo identity for the StudyCircle community concept. It uses a username and generated access key, persists identities in PostgreSQL, and stops at a protected placeholder for Phase 1.
+StudyCircle is Shikho's Class 10 Mathematics community experience. Students create a lightweight local identity, join the seeded `Math Champions` cohort, and view its mission, daily quest, roadmap, leaderboard, Mentor, streak, and recent activity.
 
 ## Prerequisites
 
 - Node.js 22+
-- Python 3.11
-- The existing Docker container `pg` running PostgreSQL on host port `15432`
-- PostgreSQL credentials `postgres` / `postgres` for this local demo instance
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
+- The existing Docker container `pg`, exposing PostgreSQL on host port `15432`
+- Local PostgreSQL credentials `postgres` / `postgres`
 
-The application deliberately does not include its own PostgreSQL container.
+The repository uses the externally managed PostgreSQL container and does not create another database service.
 
 ## First-time setup
 
-Create the single application/test database if it does not already exist:
+Create the shared development and test database if it does not already exist:
 
 ```powershell
 docker exec pg createdb -U postgres studycircle_demo
 ```
 
-If the command reports that the database exists, continue.
+If PostgreSQL reports that the database already exists, continue.
 
-Set up and migrate the backend:
+Prepare and seed the backend:
 
 ```powershell
 cd backend
@@ -31,7 +32,7 @@ uv run alembic upgrade head
 uv run python -m app.scripts.seed_demo
 ```
 
-Set up the frontend:
+Prepare the frontend:
 
 ```powershell
 cd frontend
@@ -53,48 +54,48 @@ Frontend, from `frontend/`:
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). API documentation is available at [http://localhost:8000/api/docs](http://localhost:8000/api/docs).
+Open [http://localhost:5173](http://localhost:5173). API documentation is at [http://localhost:8000/api/docs](http://localhost:8000/api/docs).
 
 ## UI components
 
-The frontend uses components installed from the official shadcn registry. Add future primitives from `frontend/` with:
+The frontend uses components installed from the official shadcn registry. Add another primitive from `frontend/` with:
 
 ```powershell
 npx shadcn@latest add <component>
 ```
 
-The registry configuration is in `frontend/components.json`. Shikho brand colors are mapped to shadcn's semantic Tailwind tokens in `frontend/src/styles.css`.
+Registry configuration is in `frontend/components.json`. Shikho brand colors are mapped to shadcn semantic tokens in `frontend/src/styles.css`.
 
-## Verify Phase 0
+## Verify
 
-Run the database migration and backend tests serially. Tests share `studycircle_demo` with development and use an outer transaction rollback, so do not run them while manually changing demo data.
+Backend tests run serially against `studycircle_demo` and roll back their changes. Do not run them while manually changing the same database.
 
 ```powershell
 cd backend
 uv run alembic upgrade head
+uv run alembic check
 uv run pytest
 ```
 
-Run frontend tests and the production build:
-
 ```powershell
 cd frontend
-npm test
+npm test -- --run
 npm run build
 ```
 
 Manual acceptance:
 
-1. Create `demo_student` and save the generated key.
-2. Enter the protected Phase 0 screen and refresh it.
-3. Clear browser site data.
-4. Return with the username and saved key.
-5. Confirm a wrong key cannot open `/app`.
-6. Restart FastAPI and confirm the valid identity still works.
+1. Run the seed command twice and confirm the reported entity counts are unchanged.
+2. Create a student identity and save its generated access key.
+3. Select **Explore StudyCircle**, view `Math Champions`, and join.
+4. Verify the mission, quest, streak, roadmap, leaderboard, Mentor, and recent activity sections.
+5. Refresh the browser and restart FastAPI; the membership must remain available.
+6. Repeat the join request and confirm member and activity counts do not duplicate.
+7. Clear browser storage, sign in with the username and access key, and verify the Circle Home restores.
 
-## Demo limitations
+## Scope and security
 
-- Access keys are stored as plain text and sent in headers. This is intentional for the disposable demo and must not be used as a production authentication design.
-- There is no recovery, rotation, expiry, password, JWT, cookie session, OTP, or Shikho account integration.
-- Phase 0 contains no circles, learning content, quizzes, scores, notes, or progress data.
-- Development and tests use the same database by explicit project decision.
+- The username and access-key mechanism is intentionally lightweight. Keys are stored as plain text and must not be treated as production authentication.
+- There is no recovery, rotation, expiry, password, JWT, OTP, or Shikho account integration.
+- Learning activities, notes, score mutations, roadmap editing, and real-time updates are outside the current scope.
+- Development and serial backend tests share one PostgreSQL database by project decision.

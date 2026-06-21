@@ -58,13 +58,13 @@ export function OnboardingPage() {
   async function onSubmit(values: FormValues) {
     setRootError(null);
     try {
-      const result = await api.createDemoUser({
+      const result = await api.createUser({
         ...values,
         username: values.username.trim().toLowerCase(),
         school_name: values.school_name?.trim() || null,
       });
       saveCredentials({ username: result.user.username, accessKey: result.access_key });
-      navigate("/demo/access-key");
+      navigate("/access-key");
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.fields.username) {
@@ -72,22 +72,22 @@ export function OnboardingPage() {
         }
         setRootError(error.message);
       } else {
-        setRootError("The demo service is unavailable. Please try again.");
+        setRootError("StudyCircle is unavailable right now. Please try again.");
       }
     }
   }
 
   return (
     <BrandShell backTo="/" compact>
-      <div className="mx-auto grid min-w-0 max-w-5xl gap-8 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.28fr)] lg:items-start">
-        <aside className="pt-3 lg:sticky lg:top-8">
+      <div className="mx-auto grid min-w-0 max-w-5xl grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.28fr)] lg:items-start">
+        <aside className="min-w-0 pt-3 lg:sticky lg:top-8">
           <span className="step-marker">Step 1 of 2</span>
           <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-[-0.055em] text-[var(--brand-dark-blue)] sm:text-5xl">
             Tell your circle who you are.
           </h1>
           <p className="mt-5 max-w-sm text-sm leading-7 text-[var(--muted-text)]">
             We only collect enough information to place you in this single Class 10 Mathematics
-            demo cohort.
+            current cohort.
           </p>
           <div className="mt-7 hidden lg:block">
             <DemoNotice />
@@ -99,7 +99,7 @@ export function OnboardingPage() {
             <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#eef3ff] text-[var(--brand-blue)]">
               <UserRoundPlus className="h-6 w-6" />
             </div>
-            <CardTitle>Create your demo identity</CardTitle>
+            <CardTitle>Create your student identity</CardTitle>
             <CardDescription>Your username and generated key will bring you back next time.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -123,7 +123,7 @@ export function OnboardingPage() {
                       <FormItem>
                         <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input autoComplete="username" placeholder="demo_student" {...field} />
+                          <Input autoComplete="username" placeholder="amina_rahman" {...field} />
                         </FormControl>
                         <FormDescription>Letters, numbers, and underscores.</FormDescription>
                         <FormMessage />
@@ -170,7 +170,7 @@ export function OnboardingPage() {
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent><SelectItem value="class_10">Class 10</SelectItem></SelectContent>
                         </Select>
-                        <FormDescription>Demo cohort</FormDescription>
+                        <FormDescription>Current cohort</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -185,7 +185,7 @@ export function OnboardingPage() {
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent><SelectItem value="nctb_bangla">NCTB Bangla</SelectItem></SelectContent>
                         </Select>
-                        <FormDescription>Demo cohort</FormDescription>
+                        <FormDescription>Current cohort</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -200,7 +200,7 @@ export function OnboardingPage() {
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent><SelectItem value="mathematics">Mathematics</SelectItem></SelectContent>
                         </Select>
-                        <FormDescription>Demo cohort</FormDescription>
+                        <FormDescription>Current cohort</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -208,7 +208,7 @@ export function OnboardingPage() {
                 </div>
 
                 <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Creating your key…" : "Create demo identity"}
+                  {form.formState.isSubmitting ? "Creating your key…" : "Create student identity"}
                   {!form.formState.isSubmitting ? <ArrowRight className="h-4 w-4" /> : null}
                 </Button>
               </form>

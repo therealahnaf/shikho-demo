@@ -1,34 +1,309 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, time, timedelta, timezone
+from uuid import UUID
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import text
+from sqlalchemy import func, select, text, update
 
-from app.db import engine
+from app.db import AsyncSessionFactory, engine
+from app.models import (
+    ActivityEvent,
+    Circle,
+    CircleMembership,
+    CircleState,
+    DailyQuest,
+    DemoUser,
+    Mission,
+    Roadmap,
+    RoadmapCheckpoint,
+    WeeklyCycle,
+)
+
+DHAKA = ZoneInfo("Asia/Dhaka")
+
+CIRCLE_ID = UUID("20000000-0000-0000-0000-000000000001")
+MISSION_ID = UUID("40000000-0000-0000-0000-000000000001")
+QUEST_ID = UUID("50000000-0000-0000-0000-000000000001")
+WEEKLY_CYCLE_ID = UUID("60000000-0000-0000-0000-000000000001")
+ROADMAP_ID = UUID("70000000-0000-0000-0000-000000000001")
+
+PEERS = [
+    {
+        "id": UUID("10000000-0000-0000-0000-000000000001"),
+        "membership_id": UUID("30000000-0000-0000-0000-000000000001"),
+        "username": "nabila_fixture",
+        "display_name": "Nabila",
+        "access_key": "SC-NABL-2222",
+        "weekly_points": 240,
+        "roadmap_position": 4,
+        "personal_contribution": 8,
+    },
+    {
+        "id": UUID("10000000-0000-0000-0000-000000000002"),
+        "membership_id": UUID("30000000-0000-0000-0000-000000000002"),
+        "username": "rafi_fixture",
+        "display_name": "Rafi",
+        "access_key": "SC-RAFA-2223",
+        "weekly_points": 210,
+        "roadmap_position": 3,
+        "personal_contribution": 7,
+    },
+    {
+        "id": UUID("10000000-0000-0000-0000-000000000003"),
+        "membership_id": UUID("30000000-0000-0000-0000-000000000003"),
+        "username": "samia_fixture",
+        "display_name": "Samia",
+        "access_key": "SC-SAMA-2224",
+        "weekly_points": 170,
+        "roadmap_position": 3,
+        "personal_contribution": 6,
+    },
+    {
+        "id": UUID("10000000-0000-0000-0000-000000000004"),
+        "membership_id": UUID("30000000-0000-0000-0000-000000000004"),
+        "username": "fahim_fixture",
+        "display_name": "Fahim",
+        "access_key": "SC-FAHM-2225",
+        "weekly_points": 130,
+        "roadmap_position": 2,
+        "personal_contribution": 5,
+    },
+    {
+        "id": UUID("10000000-0000-0000-0000-000000000005"),
+        "membership_id": UUID("30000000-0000-0000-0000-000000000005"),
+        "username": "arif_fixture",
+        "display_name": "Arif",
+        "access_key": "SC-ARAF-2226",
+        "weekly_points": 90,
+        "roadmap_position": 1,
+        "personal_contribution": 5,
+    },
+]
+
+CHECKPOINTS = [
+    ("Review Algebra Basics", "review", "algebra_basics"),
+    ("Explore Linear Equations", "lesson", "linear_equations"),
+    ("Practice Quiz", "quiz", "linear_equations"),
+    ("Review Common Mistakes", "review", "algebra_mistakes"),
+    ("Weekly Algebra Challenge", "challenge", "weekly_challenge"),
+]
 
 
-async def verify_phase_zero() -> None:
+def current_periods(now: datetime) -> dict[str, datetime | int]:
+    local_now = now.astimezone(DHAKA)
+    day_start = datetime.combine(local_now.date(), time.min, tzinfo=DHAKA)
+    next_day = day_start + timedelta(days=1)
+    week_start = day_start - timedelta(days=local_now.weekday())
+    week_end = week_start + timedelta(days=7)
+    month_start = day_start.replace(day=1)
+    if month_start.month == 12:
+        month_end = month_start.replace(year=month_start.year + 1, month=1)
+    else:
+        month_end = month_start.replace(month=month_start.month + 1)
+    return {
+        "day_start": day_start,
+        "next_day": next_day,
+        "week_start": week_start,
+        "week_end": week_end,
+        "month_start": month_start,
+        "month_end": month_end,
+        "week_number": local_now.isocalendar().week,
+    }
+
+
+async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
+    now = now or datetime.now(timezone.utc)
+    periods = current_periods(now)
+    async with AsyncSessionFactory() as session:
+        await session.execute(
+            update(Mission)
+            .where(Mission.id != MISSION_ID, Mission.status == "active")
+            .values(status="archived")
+        )
+        await session.execute(
+            update(WeeklyCycle)
+            .where(WeeklyCycle.id != WEEKLY_CYCLE_ID, WeeklyCycle.status == "active")
+            .values(status="archived")
+        )
+
+        for peer in PEERS:
+            await session.merge(
+                DemoUser(
+                    id=peer["id"],
+                    username=peer["username"],
+                    display_name=peer["display_name"],
+                    class_level="class_10",
+                    curriculum="nctb_bangla",
+                    preferred_subject="mathematics",
+                    school_name=None,
+                    access_key=peer["access_key"],
+                    is_seed_fixture=True,
+                )
+            )
+
+        await session.merge(
+            Circle(
+                id=CIRCLE_ID,
+                name="Math Champions",
+                class_level="class_10",
+                subject="mathematics",
+                description=(
+                    "A focused circle for Class 10 students building steady "
+                    "Mathematics momentum together."
+                ),
+            )
+        )
+        await session.flush()
+
+        for order, peer in enumerate(PEERS):
+            await session.merge(
+                CircleMembership(
+                    id=peer["membership_id"],
+                    circle_id=CIRCLE_ID,
+                    user_id=peer["id"],
+                    weekly_points=peer["weekly_points"],
+                    roadmap_position=peer["roadmap_position"],
+                    personal_contribution=peer["personal_contribution"],
+                    joined_at=now - timedelta(days=30 - order),
+                )
+            )
+
+        await session.merge(
+            Mission(
+                id=MISSION_ID,
+                circle_id=CIRCLE_ID,
+                title="Complete 50 roadmap activities together",
+                target=50,
+                progress=31,
+                starts_at=periods["month_start"],
+                ends_at=periods["month_end"],
+                status="active",
+            )
+        )
+        await session.merge(
+            DailyQuest(
+                id=QUEST_ID,
+                circle_id=CIRCLE_ID,
+                local_date=periods["day_start"].date(),
+                title="Complete 5 roadmap activities today",
+                target=5,
+                progress=2,
+                completed_at=None,
+            )
+        )
+        await session.merge(
+            WeeklyCycle(
+                id=WEEKLY_CYCLE_ID,
+                circle_id=CIRCLE_ID,
+                week_number=periods["week_number"],
+                starts_at=periods["week_start"],
+                ends_at=periods["week_end"],
+                status="active",
+            )
+        )
+        await session.flush()
+        await session.merge(
+            Roadmap(
+                id=ROADMAP_ID,
+                weekly_cycle_id=WEEKLY_CYCLE_ID,
+                title="Algebra Foundations Week",
+                status="published",
+                published_at=periods["week_start"],
+                created_by_user_id=PEERS[0]["id"],
+            )
+        )
+        await session.flush()
+
+        for position, (title, activity_type, topic_key) in enumerate(CHECKPOINTS):
+            await session.merge(
+                RoadmapCheckpoint(
+                    id=UUID(f"80000000-0000-0000-0000-{position + 1:012d}"),
+                    roadmap_id=ROADMAP_ID,
+                    position=position,
+                    title=title,
+                    activity_type=activity_type,
+                    topic_key=topic_key,
+                )
+            )
+
+        await session.merge(
+            CircleState(
+                circle_id=CIRCLE_ID,
+                streak_days=7,
+                current_mentor_user_id=PEERS[0]["id"],
+                updated_at=now,
+            )
+        )
+
+        seeded_events = [
+            ActivityEvent(
+                id=UUID("90000000-0000-0000-0000-000000000001"),
+                circle_id=CIRCLE_ID,
+                actor_user_id=PEERS[0]["id"],
+                event_type="checkpoint_completed",
+                payload={"checkpoint_title": "Review Common Mistakes", "checkpoint_position": 3},
+                dedupe_key="seed:nabila:checkpoint:3",
+                created_at=now - timedelta(minutes=45),
+            ),
+            ActivityEvent(
+                id=UUID("90000000-0000-0000-0000-000000000002"),
+                circle_id=CIRCLE_ID,
+                actor_user_id=PEERS[1]["id"],
+                event_type="checkpoint_completed",
+                payload={"checkpoint_title": "Practice Quiz", "checkpoint_position": 2},
+                dedupe_key="seed:rafi:checkpoint:2",
+                created_at=now - timedelta(hours=2),
+            ),
+            ActivityEvent(
+                id=UUID("90000000-0000-0000-0000-000000000003"),
+                circle_id=CIRCLE_ID,
+                actor_user_id=PEERS[2]["id"],
+                event_type="rank_changed",
+                payload={"rank": 3},
+                dedupe_key="seed:samia:rank:3",
+                created_at=now - timedelta(hours=4),
+            ),
+        ]
+        for event in seeded_events:
+            await session.merge(event)
+
+        await session.commit()
+
+        return {
+            "circles": await session.scalar(select(func.count()).select_from(Circle)),
+            "fixture_users": await session.scalar(
+                select(func.count()).select_from(DemoUser).where(DemoUser.is_seed_fixture.is_(True))
+            ),
+            "memberships": await session.scalar(
+                select(func.count()).select_from(CircleMembership).where(CircleMembership.circle_id == CIRCLE_ID)
+            ),
+            "checkpoints": await session.scalar(
+                select(func.count()).select_from(RoadmapCheckpoint).where(RoadmapCheckpoint.roadmap_id == ROADMAP_ID)
+            ),
+            "activity_events": await session.scalar(
+                select(func.count()).select_from(ActivityEvent).where(ActivityEvent.circle_id == CIRCLE_ID)
+            ),
+        }
+
+
+async def verify_and_seed() -> None:
     async with engine.connect() as connection:
         database_name = await connection.scalar(text("SELECT current_database()"))
-        table_name = await connection.scalar(
-            text("SELECT to_regclass('public.demo_users')::text")
-        )
-        revision = await connection.scalar(
-            text("SELECT version_num FROM alembic_version LIMIT 1")
-        )
+        table_name = await connection.scalar(text("SELECT to_regclass('public.circles')::text"))
+        revision = await connection.scalar(text("SELECT version_num FROM alembic_version LIMIT 1"))
+    if table_name != "circles":
+        raise SystemExit("Circle tables are missing; run `alembic upgrade head` first.")
 
-    if table_name != "demo_users":
-        raise SystemExit("demo_users is missing; run `alembic upgrade head` first.")
-    print(
-        f"Phase 0 ready: database={database_name}, revision={revision}, "
-        "seeded_product_rows=0"
-    )
+    counts = await seed_phase_one()
+    summary = ", ".join(f"{key}={value}" for key, value in counts.items())
+    print(f"StudyCircle ready: database={database_name}, revision={revision}, {summary}")
 
 
 def main() -> None:
-    asyncio.run(verify_phase_zero())
+    asyncio.run(verify_and_seed())
 
 
 if __name__ == "__main__":
     main()
-

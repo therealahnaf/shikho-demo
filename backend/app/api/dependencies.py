@@ -32,7 +32,10 @@ async def get_current_demo_user(
 
     user = await session.scalar(select(DemoUser).where(DemoUser.username == username))
     supplied_key = access_key_header.strip().upper()
-    if user is None or not hmac.compare_digest(user.access_key, supplied_key):
+    if (
+        user is None
+        or user.is_seed_fixture
+        or not hmac.compare_digest(user.access_key, supplied_key)
+    ):
         raise INVALID_ACCESS
     return user
-

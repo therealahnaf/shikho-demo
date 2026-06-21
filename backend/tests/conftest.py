@@ -8,10 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import engine, get_db
 from app.main import app
+from app.scripts.seed_demo import seed_phase_one
 
 
 @pytest_asyncio.fixture
-async def db_session() -> AsyncIterator[AsyncSession]:
+async def seeded_data() -> None:
+    await seed_phase_one()
+
+
+@pytest_asyncio.fixture
+async def db_session(seeded_data: None) -> AsyncIterator[AsyncSession]:
     connection = await engine.connect()
     transaction = await connection.begin()
     session = AsyncSession(
@@ -38,4 +44,3 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=transport, base_url="http://test") as test_client:
         yield test_client
     app.dependency_overrides.clear()
-

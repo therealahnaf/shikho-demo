@@ -6,9 +6,9 @@ export function DemoNotice() {
   return (
     <Alert className="border-[#f5d993] bg-[#fff9e9] text-[#684900] [&>svg]:text-[#684900]">
       <FlaskConical />
-      <AlertTitle>Demo access only</AlertTitle>
+      <AlertTitle>Keep your access key private</AlertTitle>
       <AlertDescription>
-        This key is intentionally simple and cannot be recovered. Do not reuse a real password.
+        There is no recovery process for this access key. Do not reuse a password from another account.
       </AlertDescription>
     </Alert>
   );

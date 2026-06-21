@@ -17,7 +17,7 @@ export function AccessKeyPage() {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   useEffect(() => {
-    if (!credentials) navigate("/demo/onboarding", { replace: true });
+    if (!credentials) navigate("/onboarding", { replace: true });
   }, [credentials, navigate]);
 
   if (!credentials) return null;
@@ -85,11 +85,10 @@ export function AccessKeyPage() {
           <ShieldAlert />
           <AlertTitle>What happens next?</AlertTitle>
           <AlertDescription>
-            Phase 0 verifies your identity. Joining a circle arrives in the next phase.
+            Your identity is ready. Continue to find the StudyCircle for your cohort.
           </AlertDescription>
         </Alert>
       </div>
     </BrandShell>
   );
 }
-

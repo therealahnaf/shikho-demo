@@ -1,0 +1,142 @@
+from __future__ import annotations
+
+import uuid
+from datetime import date, datetime
+from typing import Any, Literal
+
+from pydantic import BaseModel
+
+
+class MemberUser(BaseModel):
+    id: uuid.UUID
+    username: str
+    display_name: str
+
+
+class MissionPreview(BaseModel):
+    title: str
+    target: int
+    progress: int
+
+
+class CircleRecommendation(BaseModel):
+    id: uuid.UUID
+    name: str
+    class_level: str
+    subject: str
+    description: str
+    member_count: int
+    mission: MissionPreview
+
+
+class RecommendedCircleResponse(BaseModel):
+    data: CircleRecommendation | None
+    reason: str | None
+
+
+class MembershipSummary(BaseModel):
+    id: uuid.UUID
+    circle_id: uuid.UUID
+    circle_name: str
+    weekly_points: int
+    roadmap_position: int
+    personal_contribution: int
+    joined_at: datetime
+
+
+class MembershipLookupResponse(BaseModel):
+    membership: MembershipSummary | None
+
+
+class JoinCircleResponse(BaseModel):
+    membership: MembershipSummary
+    circle_home_path: str
+
+
+class CircleSummary(BaseModel):
+    id: uuid.UUID
+    name: str
+    class_level: str
+    subject: str
+    description: str
+    member_count: int
+
+
+class MissionView(BaseModel):
+    title: str
+    target: int
+    progress: int
+    percent_complete: int
+    ends_at: datetime
+    student_contribution: int
+
+
+class DailyQuestView(BaseModel):
+    title: str
+    target: int
+    progress: int
+    percent_complete: int
+    local_date: date
+    is_complete: bool
+    time_remaining_seconds: int
+
+
+class CircleStreakView(BaseModel):
+    days: int
+
+
+class CheckpointView(BaseModel):
+    id: uuid.UUID
+    position: int
+    title: str
+    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+    topic_key: str
+    status: Literal["completed", "current", "locked"]
+
+
+class MemberPositionView(BaseModel):
+    user: MemberUser
+    position: int
+
+
+class RoadmapPreview(BaseModel):
+    id: uuid.UUID
+    title: str
+    starts_at: datetime
+    ends_at: datetime
+    checkpoints: list[CheckpointView]
+    member_positions: list[MemberPositionView]
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user: MemberUser
+    weekly_points: int
+    is_current_user: bool
+    is_mentor: bool
+
+
+class LeaderboardPreview(BaseModel):
+    entries: list[LeaderboardEntry]
+    current_user_rank: int
+
+
+class ActivityEventView(BaseModel):
+    id: uuid.UUID
+    event_type: Literal["checkpoint_completed", "rank_changed", "member_joined"]
+    actor: MemberUser | None
+    payload: dict[str, Any]
+    created_at: datetime
+
+
+class CircleHomeResponse(BaseModel):
+    circle: CircleSummary
+    membership: MembershipSummary
+    mission: MissionView
+    daily_quest: DailyQuestView
+    streak: CircleStreakView
+    mentor: MemberUser | None
+    roadmap: RoadmapPreview
+    leaderboard: LeaderboardPreview
+    activity_feed: list[ActivityEventView]
+

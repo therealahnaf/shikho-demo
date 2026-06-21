@@ -1,0 +1,59 @@
+import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+
+import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { api } from "@/lib/api";
+
+export function JoinedCirclePage() {
+  const navigate = useNavigate();
+  const userQuery = useCurrentUser();
+  const membershipQuery = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
+    enabled: userQuery.isSuccess,
+    retry: false,
+  });
+  useEffect(() => {
+    if (membershipQuery.isSuccess && !membershipQuery.data.membership) {
+      navigate("/app/study-circle/recommended", { replace: true });
+    }
+  }, [membershipQuery.data, membershipQuery.isSuccess, navigate]);
+
+  if (userQuery.isPending || membershipQuery.isPending) return <AppPageLoading />;
+  if (userQuery.isError || membershipQuery.isError) {
+    return <AppPageError onRetry={() => void (userQuery.refetch(), membershipQuery.refetch())} />;
+  }
+  const membership = membershipQuery.data.membership;
+  if (!membership) return null;
+
+  return (
+    <AppShell user={userQuery.data}>
+      <div className="mx-auto max-w-2xl py-10 text-center">
+        <Card className="overflow-hidden border border-border shadow-sm">
+          <CardContent className="p-8 sm:p-12">
+            <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#ecfaf5] text-[#16785d]">
+              <Check className="h-9 w-9 stroke-[3]" />
+              <Sparkles className="absolute -right-2 -top-1 h-6 w-6 text-[var(--brand-yellow)]" />
+            </div>
+            <p className="mt-7 text-xs font-black uppercase tracking-[0.18em] text-[var(--brand-pink)]">Welcome to the circle</p>
+            <h1 className="mt-3 text-4xl font-black tracking-[-0.05em] text-[var(--brand-dark-blue)] sm:text-5xl">
+              You joined {membership.circle_name}.
+            </h1>
+            <p className="mx-auto mt-5 max-w-lg leading-7 text-muted-foreground">
+              Your roadmap position, contribution, and weekly points will stay connected to this account.
+            </p>
+            <Button asChild size="lg" className="mt-8">
+              <Link to={`/app/study-circle/${membership.circle_id}`}>Enter StudyCircle <ArrowRight /></Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </AppShell>
+  );
+}

@@ -33,18 +33,18 @@ export function LandingPage() {
             <Button
               asChild
               size="lg"
-              className="rounded-full bg-[var(--brand-pink)] font-bold shadow-[0_8px_24px_rgba(226,0,141,.2)] hover:bg-[var(--brand-magenta)]"
+              className="rounded-full bg-[var(--brand-pink)] font-bold shadow-sm hover:bg-[var(--brand-magenta)]"
             >
-              <Link to="/demo/onboarding">
-                Try StudyCircle Demo <ArrowRight className="h-4 w-4" />
+              <Link to="/onboarding">
+                Explore StudyCircle <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-full font-bold">
-              <Link to="/demo/login">I already have a key</Link>
+              <Link to="/login">I already have a key</Link>
             </Button>
           </div>
           <p className="mt-4 text-xs font-semibold text-[#737b9d]">
-            No password, payment, or real Shikho account required.
+            Use your student access key to return anytime.
           </p>
         </div>
 
@@ -52,7 +52,7 @@ export function LandingPage() {
           <div className="orbit-ring orbit-ring-one" />
           <div className="orbit-ring orbit-ring-two" />
           <div className="orbit-core">
-            <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/60">
+            <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#dce4ff]">
               Your circle
             </span>
             <strong>Math Champions</strong>

@@ -48,7 +48,7 @@ export function LoginPage() {
       setRootError(
         error instanceof ApiError
           ? error.message
-          : "The demo service is unavailable. Please try again.",
+          : "StudyCircle is unavailable right now. Please try again.",
       );
     }
   }
@@ -82,7 +82,7 @@ export function LoginPage() {
                     <FormItem>
                       <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input autoComplete="username" placeholder="demo_student" {...field} />
+                        <Input autoComplete="username" placeholder="amina_rahman" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -114,8 +114,8 @@ export function LoginPage() {
               </form>
             </Form>
             <p className="mt-7 text-center text-sm text-[var(--muted-text)]">
-              New to the demo?{" "}
-              <Link className="font-bold text-[var(--brand-blue)] hover:underline" to="/demo/onboarding">
+              New to StudyCircle?{" "}
+              <Link className="font-bold text-[var(--brand-blue)] hover:underline" to="/onboarding">
                 Create an identity
               </Link>
             </p>
