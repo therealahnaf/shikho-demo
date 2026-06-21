@@ -17,6 +17,8 @@ import { StudyCircleIntroPage } from "@/pages/study-circle-intro-page";
 import { CircleStorePage } from "@/pages/circle-store-page";
 import { NewNotePage } from "@/pages/new-note-page";
 import { NoteDetailPage } from "@/pages/note-detail-page";
+import { MentorWorkspacePage } from "@/pages/mentor-workspace-page";
+import { MentorPreviewPage } from "@/pages/mentor-preview-page";
 
 export function AppRoutes() {
   return (
@@ -42,6 +44,8 @@ export function AppRoutes() {
         <Route path="/app/study-circle/:circleId/store" element={<CircleStorePage />} />
         <Route path="/app/study-circle/:circleId/store/new" element={<NewNotePage />} />
         <Route path="/app/study-circle/:circleId/store/:noteId" element={<NoteDetailPage />} />
+        <Route path="/app/study-circle/:circleId/mentor" element={<MentorWorkspacePage />} />
+        <Route path="/app/study-circle/:circleId/mentor/preview" element={<MentorPreviewPage />} />
         <Route path="/app/study-circle/:circleId" element={<CircleHomePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

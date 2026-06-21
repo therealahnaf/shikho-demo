@@ -124,13 +124,208 @@ def current_periods(now: datetime) -> dict[str, datetime | int]:
     }
 
 
+async def seed_circle_helper(
+    session,
+    now: datetime,
+    periods: dict,
+    circle_id: UUID,
+    name: str,
+    description: str,
+    streak_days: int,
+    members: list[dict],
+) -> None:
+    # 1. Circle
+    await session.merge(
+        Circle(
+            id=circle_id,
+            name=name,
+            class_level="class_10",
+            subject="mathematics",
+            description=description,
+        )
+    )
+    await session.flush()
+
+    # 2. Members (DemoUser and CircleMembership)
+    for order, member in enumerate(members):
+        await session.merge(
+            DemoUser(
+                id=member["id"],
+                username=member["username"],
+                display_name=member["display_name"],
+                class_level="class_10",
+                curriculum="nctb_bangla",
+                preferred_subject="mathematics",
+                school_name=None,
+                access_key=member["access_key"],
+                is_seed_fixture=True,
+            )
+        )
+        await session.merge(
+            CircleMembership(
+                id=member["membership_id"],
+                circle_id=circle_id,
+                user_id=member["id"],
+                weekly_points=member["weekly_points"],
+                roadmap_position=member["roadmap_position"],
+                personal_contribution=member["personal_contribution"],
+                joined_at=now - timedelta(days=30 - order),
+            )
+        )
+
+    # 3. CircleState
+    await session.merge(
+        CircleState(
+            circle_id=circle_id,
+            streak_days=streak_days,
+            current_mentor_user_id=members[0]["id"],
+            updated_at=now,
+        )
+    )
+
+    # 4. WeeklyCycle
+    cycle_id = UUID(f"{circle_id.hex[:-1]}a")
+    await session.merge(
+        WeeklyCycle(
+            id=cycle_id,
+            circle_id=circle_id,
+            week_number=periods["week_number"],
+            starts_at=periods["week_start"],
+            ends_at=periods["week_end"],
+            status="active",
+        )
+    )
+    await session.flush()
+
+    # 5. Mission & Quest
+    mission_id = UUID(f"{circle_id.hex[:-1]}b")
+    await session.merge(
+        Mission(
+            id=mission_id,
+            circle_id=circle_id,
+            title="Complete 50 roadmap activities together",
+            target=50,
+            progress=20,
+            starts_at=periods["month_start"],
+            ends_at=periods["month_end"],
+            status="active",
+        )
+    )
+    quest_id = UUID(f"{circle_id.hex[:-1]}c")
+    await session.merge(
+        DailyQuest(
+            id=quest_id,
+            circle_id=circle_id,
+            local_date=periods["day_start"].date(),
+            title="Complete 5 roadmap activities today",
+            target=5,
+            progress=1,
+            completed_at=None,
+        )
+    )
+
+    # 6. Roadmap & Checkpoints
+    roadmap_id = UUID(f"{circle_id.hex[:-1]}d")
+    await session.merge(
+        Roadmap(
+            id=roadmap_id,
+            weekly_cycle_id=cycle_id,
+            title="Algebra Foundations Week",
+            status="published",
+            published_at=periods["week_start"],
+            created_by_user_id=members[0]["id"],
+        )
+    )
+    await session.flush()
+
+    checkpoints_data = [
+        ("Review Algebra Basics", "review", "algebra_basics"),
+        ("Explore Linear Equations", "lesson", "linear_equations"),
+        ("Practice Quiz", "quiz", "linear_equations"),
+        ("Review Common Mistakes", "review", "algebra_mistakes"),
+        ("Weekly Algebra Challenge", "challenge", "weekly_challenge"),
+    ]
+    for position, (title, activity_type, topic_key) in enumerate(checkpoints_data):
+        cp_id = UUID(f"{circle_id.hex[:-2]}e{position:02d}")
+        await session.merge(
+            RoadmapCheckpoint(
+                id=cp_id,
+                roadmap_id=roadmap_id,
+                position=position,
+                title=title,
+                activity_type=activity_type,
+                topic_key=topic_key,
+            )
+        )
+
+
 async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
     now = now or datetime.now(timezone.utc)
     periods = current_periods(now)
+
+    pi_members = [
+        {
+            "id": UUID("10000000-0000-0000-0000-000000000006"),
+            "membership_id": UUID("30000000-0000-0000-0000-000000000006"),
+            "username": "sadia_fixture",
+            "display_name": "Sadia",
+            "access_key": "SC-SADI-2227",
+            "weekly_points": 180,
+            "roadmap_position": 3,
+            "personal_contribution": 6,
+        },
+        {
+            "id": UUID("10000000-0000-0000-0000-000000000007"),
+            "membership_id": UUID("30000000-0000-0000-0000-000000000007"),
+            "username": "tanvir_fixture",
+            "display_name": "Tanvir",
+            "access_key": "SC-TANV-2228",
+            "weekly_points": 150,
+            "roadmap_position": 2,
+            "personal_contribution": 4,
+        },
+    ]
+
+    eq_members = [
+        {
+            "id": UUID("10000000-0000-0000-0000-000000000008"),
+            "membership_id": UUID("30000000-0000-0000-0000-000000000008"),
+            "username": "munir_fixture",
+            "display_name": "Munir",
+            "access_key": "SC-MUNI-2229",
+            "weekly_points": 220,
+            "roadmap_position": 4,
+            "personal_contribution": 7,
+        },
+        {
+            "id": UUID("10000000-0000-0000-0000-000000000009"),
+            "membership_id": UUID("30000000-0000-0000-0000-000000000009"),
+            "username": "tasnim_fixture",
+            "display_name": "Tasnim",
+            "access_key": "SC-TASN-2230",
+            "weekly_points": 110,
+            "roadmap_position": 2,
+            "personal_contribution": 3,
+        },
+    ]
+
+    tri_members = [
+        {
+            "id": UUID("10000000-0000-0000-0000-000000000010"),
+            "membership_id": UUID("30000000-0000-0000-0000-000000000010"),
+            "username": "imran_fixture",
+            "display_name": "Imran",
+            "access_key": "SC-IMRA-2231",
+            "weekly_points": 80,
+            "roadmap_position": 1,
+            "personal_contribution": 2,
+        },
+    ]
+
     async with AsyncSessionFactory() as session:
         await session.execute(
             update(Mission)
-            .where(Mission.id != MISSION_ID, Mission.status == "active")
+            .where(Mission.circle_id != MISSION_ID, Mission.status == "active")
             .values(status="archived")
         )
         await session.execute(
@@ -139,115 +334,47 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             .values(status="archived")
         )
 
-        for peer in PEERS:
-            await session.merge(
-                DemoUser(
-                    id=peer["id"],
-                    username=peer["username"],
-                    display_name=peer["display_name"],
-                    class_level="class_10",
-                    curriculum="nctb_bangla",
-                    preferred_subject="mathematics",
-                    school_name=None,
-                    access_key=peer["access_key"],
-                    is_seed_fixture=True,
-                )
-            )
-
-        await session.merge(
-            Circle(
-                id=CIRCLE_ID,
-                name="Math Champions",
-                class_level="class_10",
-                subject="mathematics",
-                description=(
-                    "A focused circle for Class 10 students building steady "
-                    "Mathematics momentum together."
-                ),
-            )
-        )
-        await session.flush()
-
-        for order, peer in enumerate(PEERS):
-            await session.merge(
-                CircleMembership(
-                    id=peer["membership_id"],
-                    circle_id=CIRCLE_ID,
-                    user_id=peer["id"],
-                    weekly_points=peer["weekly_points"],
-                    roadmap_position=peer["roadmap_position"],
-                    personal_contribution=peer["personal_contribution"],
-                    joined_at=now - timedelta(days=30 - order),
-                )
-            )
-
-        await session.merge(
-            Mission(
-                id=MISSION_ID,
-                circle_id=CIRCLE_ID,
-                title="Complete 50 roadmap activities together",
-                target=50,
-                progress=31,
-                starts_at=periods["month_start"],
-                ends_at=periods["month_end"],
-                status="active",
-            )
-        )
-        await session.merge(
-            DailyQuest(
-                id=QUEST_ID,
-                circle_id=CIRCLE_ID,
-                local_date=periods["day_start"].date(),
-                title="Complete 5 roadmap activities today",
-                target=5,
-                progress=2,
-                completed_at=None,
-            )
-        )
-        await session.merge(
-            WeeklyCycle(
-                id=WEEKLY_CYCLE_ID,
-                circle_id=CIRCLE_ID,
-                week_number=periods["week_number"],
-                starts_at=periods["week_start"],
-                ends_at=periods["week_end"],
-                status="active",
-            )
-        )
-        await session.flush()
-        await session.merge(
-            Roadmap(
-                id=ROADMAP_ID,
-                weekly_cycle_id=WEEKLY_CYCLE_ID,
-                title="Algebra Foundations Week",
-                status="published",
-                published_at=periods["week_start"],
-                created_by_user_id=PEERS[0]["id"],
-            )
-        )
-        await session.flush()
-
-        for position, (title, activity_type, topic_key) in enumerate(CHECKPOINTS):
-            await session.merge(
-                RoadmapCheckpoint(
-                    id=UUID(f"80000000-0000-0000-0000-{position + 1:012d}"),
-                    roadmap_id=ROADMAP_ID,
-                    position=position,
-                    title=title,
-                    activity_type=activity_type,
-                    topic_key=topic_key,
-                )
-            )
-
-        await session.merge(
-            CircleState(
-                circle_id=CIRCLE_ID,
-                streak_days=7,
-                current_mentor_user_id=PEERS[0]["id"],
-                updated_at=now,
-            )
+        # Seed Math Champions
+        await seed_circle_helper(
+            session, now, periods,
+            CIRCLE_ID,
+            "Math Champions",
+            "A focused circle for Class 10 students building steady Mathematics momentum together.",
+            7,
+            PEERS
         )
 
+        # Seed Pi Squad
+        await seed_circle_helper(
+            session, now, periods,
+            UUID("20000000-0000-0000-0000-000000000002"),
+            "Pi Squad",
+            "Solving advanced equations and math challenges together.",
+            5,
+            pi_members
+        )
+
+        # Seed Equation Elites
+        await seed_circle_helper(
+            session, now, periods,
+            UUID("20000000-0000-0000-0000-000000000003"),
+            "Equation Elites",
+            "Mastering formulas and algebraic proofs every week.",
+            3,
+            eq_members
+        )
+
+        # Seed Trigonometry Titans
+        await seed_circle_helper(
+            session, now, periods,
+            UUID("20000000-0000-0000-0000-000000000004"),
+            "Trigonometry Titans",
+            "Tackling geometry and trigonometric identities together.",
+            2,
+            tri_members
+        )
+
+        # Seed Activity Events for Math Champions (retains original tests compatibility)
         seeded_events = [
             ActivityEvent(
                 id=UUID("90000000-0000-0000-0000-000000000001"),
@@ -336,6 +463,7 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
 
         await session.commit()
 
+        # Let's count totals
         return {
             "circles": await session.scalar(select(func.count()).select_from(Circle)),
             "fixture_users": await session.scalar(
@@ -375,3 +503,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

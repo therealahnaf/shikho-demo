@@ -110,11 +110,16 @@ export type CircleHome = {
       | "member_joined"
       | "daily_quest_completed"
       | "streak_increased"
-      | "note_created";
+      | "note_created"
+      | "mentor_selected"
+      | "roadmap_published"
+      | "week_started";
     actor: MemberUser | null;
     payload: Record<string, unknown>;
     created_at: string;
   }>;
+  cycle_status: "active" | "finalized";
+  next_roadmap_published: boolean;
 };
 
 export type RoadmapDetail = {
@@ -328,4 +333,77 @@ export const api = {
       true,
     );
   },
+  finalizeWeek(circleId: string) {
+    return request<MentorTerm>(`/api/v1/demo/circles/${circleId}/finalize-week`, {
+      method: "POST"
+    }, true);
+  },
+  getMentorWorkspace(circleId: string) {
+    return request<MentorWorkspace>(`/api/v1/circles/${circleId}/mentor-workspace`, {}, true);
+  },
+  publishNextRoadmap(circleId: string, input: PublishRoadmapInput, idempotencyKey?: string) {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers["Idempotency-Key"] = idempotencyKey;
+    }
+    return request<PlannedRoadmap>(`/api/v1/circles/${circleId}/next-roadmap`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(input),
+    }, true);
+  },
+  startNextWeek(circleId: string) {
+    return request<CircleHome>(`/api/v1/demo/circles/${circleId}/start-next-week`, {
+      method: "POST"
+    }, true);
+  },
 };
+
+export type MentorTerm = {
+  id: string;
+  circle_id: string;
+  weekly_cycle_id: string;
+  mentor_user_id: string;
+  final_rank: number;
+  final_points: number;
+  selected_at: string;
+};
+
+export type WorkspaceTopic = {
+  key: string;
+  name: string;
+};
+
+export type WorkspaceNote = {
+  id: string;
+  title: string;
+  category: string;
+  author_name: string;
+  helpful_count: number;
+};
+
+export type PlannedCheckpoint = {
+  topic_key: string;
+  activity_type: ActivityType;
+};
+
+export type PlannedRoadmap = {
+  title: string;
+  mentor_pick_note_id: string | null;
+  checkpoints: PlannedCheckpoint[];
+};
+
+export type MentorWorkspace = {
+  current_term: MentorTerm;
+  topics: WorkspaceTopic[];
+  activity_types: string[];
+  notes: WorkspaceNote[];
+  planned_roadmap: PlannedRoadmap | null;
+};
+
+export type PublishRoadmapInput = {
+  title: string;
+  mentor_pick_note_id: string | null;
+  checkpoints: PlannedCheckpoint[];
+};
+

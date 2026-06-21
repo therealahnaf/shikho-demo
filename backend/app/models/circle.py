@@ -26,9 +26,6 @@ from app.db import Base
 
 class Circle(Base):
     __tablename__ = "circles"
-    __table_args__ = (
-        UniqueConstraint("class_level", "subject", name="uq_circles_class_subject"),
-    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -107,7 +104,7 @@ class WeeklyCycle(Base):
     __table_args__ = (
         CheckConstraint("week_number BETWEEN 1 AND 53", name="week_number"),
         CheckConstraint("ends_at > starts_at", name="date_range"),
-        CheckConstraint("status IN ('active', 'archived', 'planned')", name="status"),
+        CheckConstraint("status IN ('active', 'archived', 'planned', 'finalized')", name="status"),
         Index(
             "uq_weekly_cycles_active_circle",
             "circle_id",
@@ -137,6 +134,7 @@ class Roadmap(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("demo_users.id", ondelete="SET NULL"), nullable=True)
+    mentor_pick_note_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("notes.id", ondelete="SET NULL"), nullable=True)
 
 
 class RoadmapCheckpoint(Base):
@@ -171,7 +169,7 @@ class ActivityEvent(Base):
     __tablename__ = "activity_events"
     __table_args__ = (
         CheckConstraint(
-            "event_type IN ('checkpoint_completed', 'rank_changed', 'member_joined', 'daily_quest_completed', 'streak_increased', 'note_created')",
+            "event_type IN ('checkpoint_completed', 'rank_changed', 'member_joined', 'daily_quest_completed', 'streak_increased', 'note_created', 'mentor_selected', 'roadmap_published', 'week_started')",
             name="event_type",
         ),
         Index("ix_activity_events_circle_created", "circle_id", text("created_at DESC")),
@@ -266,3 +264,20 @@ class NoteReaction(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("demo_users.id", ondelete="CASCADE"), nullable=False)
     reaction_type: Mapped[str] = mapped_column(String(20), default="helpful", server_default="helpful", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class MentorTerm(Base):
+    __tablename__ = "mentor_terms"
+    __table_args__ = (
+        CheckConstraint("final_rank = 1", name="final_rank"),
+        UniqueConstraint("weekly_cycle_id", name="uq_mentor_terms_weekly_cycle_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    circle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("circles.id", ondelete="CASCADE"), nullable=False)
+    weekly_cycle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("weekly_cycles.id", ondelete="CASCADE"), nullable=False)
+    mentor_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("demo_users.id", ondelete="CASCADE"), nullable=False)
+    final_rank: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
+    final_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    selected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

@@ -130,6 +130,9 @@ class ActivityEventView(BaseModel):
         "daily_quest_completed",
         "streak_increased",
         "note_created",
+        "mentor_selected",
+        "roadmap_published",
+        "week_started",
     ]
     actor: MemberUser | None
     payload: dict[str, Any]
@@ -146,6 +149,8 @@ class CircleHomeResponse(BaseModel):
     roadmap: RoadmapPreview
     leaderboard: LeaderboardPreview
     activity_feed: list[ActivityEventView]
+    cycle_status: Literal["active", "finalized"]
+    next_roadmap_published: bool
 
 
 class WeeklyCycleView(BaseModel):
@@ -193,3 +198,77 @@ class CompletionResponse(BaseModel):
     streak: CircleStreakView
     streak_increased: bool
     next_checkpoint: CheckpointView | None
+
+
+class MentorTermView(BaseModel):
+    id: uuid.UUID
+    circle_id: uuid.UUID
+    weekly_cycle_id: uuid.UUID
+    mentor_user_id: uuid.UUID
+    final_rank: int
+    final_points: int
+    selected_at: datetime
+
+
+class WorkspaceTopic(BaseModel):
+    key: str
+    name: str
+
+
+class WorkspaceNote(BaseModel):
+    id: uuid.UUID
+    title: str
+    category: str
+    author_name: str
+    helpful_count: int
+
+
+class PlannedCheckpoint(BaseModel):
+    topic_key: str
+    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+
+
+class PlannedRoadmapView(BaseModel):
+    title: str
+    mentor_pick_note_id: uuid.UUID | None
+    checkpoints: list[PlannedCheckpoint]
+
+
+class MentorWorkspaceResponse(BaseModel):
+    current_term: MentorTermView
+    topics: list[WorkspaceTopic]
+    activity_types: list[str]
+    notes: list[WorkspaceNote]
+    planned_roadmap: PlannedRoadmapView | None
+
+
+class PublishRoadmapCheckpoint(BaseModel):
+    topic_key: str
+    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+
+
+class PublishRoadmapRequest(BaseModel):
+    title: str
+    mentor_pick_note_id: uuid.UUID | None
+    checkpoints: list[PublishRoadmapCheckpoint]
+
+
+class CircleLeaderboardEntry(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    member_count: int
+    points: int
+    class_level: str
+    subject: str
+
+
+class CircleLeaderboardResponse(BaseModel):
+    circles: list[CircleLeaderboardEntry]
+
+
+class CreateCircleRequest(BaseModel):
+    name: str
+    description: str
+
+

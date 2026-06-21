@@ -123,7 +123,8 @@ async def test_seed_is_idempotent() -> None:
         "fixture_users": 5,
         "memberships": 5,
         "checkpoints": 5,
-        "activity_events": 3,
+        "activity_events": 8,
+        "notes": 5,
     }
 
 

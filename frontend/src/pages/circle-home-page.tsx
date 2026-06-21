@@ -189,6 +189,7 @@ export function CircleHomePage() {
           </div>
         </div>
 
+
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px]">
           <Card className="border-0 shadow-sm">
             <CardHeader className="p-4 pb-2">

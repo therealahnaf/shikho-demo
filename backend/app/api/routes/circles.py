@@ -15,6 +15,12 @@ from app.schemas.circle import (
     MembershipLookupResponse,
     RecommendedCircleResponse,
     RoadmapDetailResponse,
+    MentorTermView,
+    MentorWorkspaceResponse,
+    PublishRoadmapRequest,
+    PlannedRoadmapView,
+    CircleLeaderboardResponse,
+    CreateCircleRequest,
 )
 from app.services.circles import (
     circle_home,
@@ -22,6 +28,10 @@ from app.services.circles import (
     join_circle,
     membership_summary,
     recommended_circle,
+    finalize_week,
+    get_mentor_workspace,
+    publish_next_roadmap,
+    start_next_week,
 )
 from app.services.progress import (
     activity_feed,
@@ -123,3 +133,73 @@ async def complete_circle_checkpoint(
     return await complete_checkpoint(
         session, current_user, circle_id, checkpoint_id
     )
+
+
+@router.post(
+    "/demo/circles/{circle_id}/finalize-week", response_model=MentorTermView
+)
+async def api_finalize_week(
+    circle_id: UUID,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> MentorTermView:
+    return await finalize_week(session, current_user, circle_id)
+
+
+@router.get(
+    "/circles/{circle_id}/mentor-workspace",
+    response_model=MentorWorkspaceResponse,
+)
+async def api_get_mentor_workspace(
+    circle_id: UUID,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> MentorWorkspaceResponse:
+    return await get_mentor_workspace(session, current_user, circle_id)
+
+
+@router.post(
+    "/circles/{circle_id}/next-roadmap", response_model=PlannedRoadmapView
+)
+async def api_publish_next_roadmap(
+    circle_id: UUID,
+    request: PublishRoadmapRequest,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> PlannedRoadmapView:
+    return await publish_next_roadmap(session, current_user, circle_id, request)
+
+
+@router.post(
+    "/demo/circles/{circle_id}/start-next-week",
+    response_model=CircleHomeResponse,
+)
+async def api_start_next_week(
+    circle_id: UUID,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> CircleHomeResponse:
+    return await start_next_week(session, current_user, circle_id)
+
+
+@router.get("/circles", response_model=CircleLeaderboardResponse)
+async def read_circles(
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> CircleLeaderboardResponse:
+    from app.schemas.circle import CircleLeaderboardResponse
+    from app.services.circles import list_circles_service
+    return await list_circles_service(session, current_user)
+
+
+@router.post("/circles", response_model=JoinCircleResponse)
+async def create_circle(
+    request: CreateCircleRequest,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> JoinCircleResponse:
+    from app.schemas.circle import CircleLeaderboardResponse, CreateCircleRequest
+    from app.services.circles import create_circle_service
+    return await create_circle_service(session, current_user, request.name, request.description)
+
+
