@@ -20,7 +20,7 @@ export function AppResolverPage() {
     if (!membershipQuery.isSuccess) return;
     const membership = membershipQuery.data.membership;
     navigate(
-      membership ? `/app/study-circle/${membership.circle_id}` : "/app/home",
+      membership ? `/app/study-circle/${membership.circle_id}` : "/app/study-circle/lobby",
       { replace: true },
     );
   }, [membershipQuery.data, membershipQuery.isSuccess, navigate]);

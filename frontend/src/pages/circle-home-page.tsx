@@ -15,14 +15,23 @@ import {
   UsersRound,
   Zap,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
 import { ActivityFeedItem } from "@/components/activity-feed-item";
 import { useAppUser } from "@/components/app-layout";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -160,6 +169,25 @@ export function CircleHomePage() {
   }
 
   const data = homeQuery.data;
+  const queryClient = useQueryClient();
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+
+  const handleLeave = async () => {
+    setIsLeaving(true);
+    try {
+      await api.leaveCircle(circleId);
+      queryClient.invalidateQueries({ queryKey: ["membership"] });
+      queryClient.invalidateQueries({ queryKey: ["circle-home", circleId] });
+      navigate("/app", { replace: true });
+    } catch (err) {
+      console.error("Failed to leave circle:", err);
+    } finally {
+      setIsLeaving(false);
+      setIsLeaveOpen(false);
+    }
+  };
+
   const firstName = user.display_name.split(/\s+/)[0];
   const endDate = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
     new Date(data.mission.ends_at),
@@ -184,6 +212,9 @@ export function CircleHomePage() {
             </div>
             <div className="flex items-center gap-2">
               <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]"><Link to={`/app/study-circle/${circleId}/store`}><LibraryBig className="size-4" /> Circle Store</Link></Button>
+              <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-white" onClick={() => setIsLeaveOpen(true)}>
+                Leave Circle
+              </Button>
               <Badge variant="outline" className="border-[#b7c6e8] bg-white text-[var(--brand-dark-blue)]">Class 10 · Mathematics</Badge>
             </div>
           </div>
@@ -408,6 +439,31 @@ export function CircleHomePage() {
             </CardContent>
           </Card>
         </div>
+
+        <Dialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen}>
+          <DialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl p-6 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">
+                Leave StudyCircle
+              </DialogTitle>
+              <DialogDescription className="text-slate-500 mt-2">
+                Are you sure you want to leave <strong>{data.circle.name}</strong>? You will lose your membership standing and progress in this circle.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 sm:justify-end pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsLeaveOpen(false)} className="border-slate-200 text-slate-700 hover:bg-slate-50">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleLeave}
+                disabled={isLeaving}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+              >
+                {isLeaving ? "Leaving..." : "Leave Circle"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

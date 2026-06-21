@@ -357,6 +357,26 @@ export const api = {
       method: "POST"
     }, true);
   },
+  getCircles() {
+    return request<CircleLeaderboardResponse>("/api/v1/circles", {}, true);
+  },
+  createCircle(name: string, description: string) {
+    return request<{ membership: Membership; circle_home_path: string }>(
+      "/api/v1/circles",
+      {
+        method: "POST",
+        body: JSON.stringify({ name, description }),
+      },
+      true,
+    );
+  },
+  leaveCircle(circleId: string) {
+    return request<{ success: boolean; message: string }>(
+      `/api/v1/circles/${circleId}/leave`,
+      { method: "POST" },
+      true,
+    );
+  },
 };
 
 export type MentorTerm = {
@@ -405,5 +425,19 @@ export type PublishRoadmapInput = {
   title: string;
   mentor_pick_note_id: string | null;
   checkpoints: PlannedCheckpoint[];
+};
+
+export type CircleLeaderboardEntry = {
+  id: string;
+  name: string;
+  description: string;
+  member_count: number;
+  points: number;
+  class_level: string;
+  subject: string;
+};
+
+export type CircleLeaderboardResponse = {
+  circles: CircleLeaderboardEntry[];
 };
 

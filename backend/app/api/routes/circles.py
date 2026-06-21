@@ -21,6 +21,7 @@ from app.schemas.circle import (
     PlannedRoadmapView,
     CircleLeaderboardResponse,
     CreateCircleRequest,
+    LeaveCircleResponse,
 )
 from app.services.circles import (
     circle_home,
@@ -201,5 +202,16 @@ async def create_circle(
     from app.schemas.circle import CircleLeaderboardResponse, CreateCircleRequest
     from app.services.circles import create_circle_service
     return await create_circle_service(session, current_user, request.name, request.description)
+
+
+@router.post("/circles/{circle_id}/leave", response_model=LeaveCircleResponse)
+async def api_leave_circle(
+    circle_id: UUID,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> LeaveCircleResponse:
+    from app.schemas.circle import LeaveCircleResponse
+    from app.services.circles import leave_circle
+    return await leave_circle(session, current_user, circle_id)
 
 

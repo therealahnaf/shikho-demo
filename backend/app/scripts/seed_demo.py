@@ -132,6 +132,8 @@ async def seed_circle_helper(
     name: str,
     description: str,
     streak_days: int,
+    mission_progress: int,
+    quest_progress: int,
     members: list[dict],
 ) -> None:
     # 1. Circle
@@ -184,7 +186,7 @@ async def seed_circle_helper(
     )
 
     # 4. WeeklyCycle
-    cycle_id = UUID(f"{circle_id.hex[:-1]}a")
+    cycle_id = UUID("6" + circle_id.hex[1:])
     await session.merge(
         WeeklyCycle(
             id=cycle_id,
@@ -198,20 +200,20 @@ async def seed_circle_helper(
     await session.flush()
 
     # 5. Mission & Quest
-    mission_id = UUID(f"{circle_id.hex[:-1]}b")
+    mission_id = UUID("4" + circle_id.hex[1:])
     await session.merge(
         Mission(
             id=mission_id,
             circle_id=circle_id,
             title="Complete 50 roadmap activities together",
             target=50,
-            progress=20,
+            progress=mission_progress,
             starts_at=periods["month_start"],
             ends_at=periods["month_end"],
             status="active",
         )
     )
-    quest_id = UUID(f"{circle_id.hex[:-1]}c")
+    quest_id = UUID("5" + circle_id.hex[1:])
     await session.merge(
         DailyQuest(
             id=quest_id,
@@ -219,13 +221,13 @@ async def seed_circle_helper(
             local_date=periods["day_start"].date(),
             title="Complete 5 roadmap activities today",
             target=5,
-            progress=1,
+            progress=quest_progress,
             completed_at=None,
         )
     )
 
     # 6. Roadmap & Checkpoints
-    roadmap_id = UUID(f"{circle_id.hex[:-1]}d")
+    roadmap_id = UUID("7" + circle_id.hex[1:])
     await session.merge(
         Roadmap(
             id=roadmap_id,
@@ -246,7 +248,7 @@ async def seed_circle_helper(
         ("Weekly Algebra Challenge", "challenge", "weekly_challenge"),
     ]
     for position, (title, activity_type, topic_key) in enumerate(checkpoints_data):
-        cp_id = UUID(f"{circle_id.hex[:-2]}e{position:02d}")
+        cp_id = UUID(f"c0000000-0000-0000-0000-{circle_id.hex[-10:]}{position:02d}")
         await session.merge(
             RoadmapCheckpoint(
                 id=cp_id,
@@ -269,7 +271,7 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "membership_id": UUID("30000000-0000-0000-0000-000000000006"),
             "username": "sadia_fixture",
             "display_name": "Sadia",
-            "access_key": "SC-SADI-2227",
+            "access_key": "SC-SADA-2227",
             "weekly_points": 180,
             "roadmap_position": 3,
             "personal_contribution": 6,
@@ -292,7 +294,7 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "membership_id": UUID("30000000-0000-0000-0000-000000000008"),
             "username": "munir_fixture",
             "display_name": "Munir",
-            "access_key": "SC-MUNI-2229",
+            "access_key": "SC-MUNA-2229",
             "weekly_points": 220,
             "roadmap_position": 4,
             "personal_contribution": 7,
@@ -302,7 +304,7 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "membership_id": UUID("30000000-0000-0000-0000-000000000009"),
             "username": "tasnim_fixture",
             "display_name": "Tasnim",
-            "access_key": "SC-TASN-2230",
+            "access_key": "SC-TASN-2232",
             "weekly_points": 110,
             "roadmap_position": 2,
             "personal_contribution": 3,
@@ -315,7 +317,7 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "membership_id": UUID("30000000-0000-0000-0000-000000000010"),
             "username": "imran_fixture",
             "display_name": "Imran",
-            "access_key": "SC-IMRA-2231",
+            "access_key": "SC-EMRA-2232",
             "weekly_points": 80,
             "roadmap_position": 1,
             "personal_contribution": 2,
@@ -341,6 +343,8 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "Math Champions",
             "A focused circle for Class 10 students building steady Mathematics momentum together.",
             7,
+            31,
+            2,
             PEERS
         )
 
@@ -351,6 +355,8 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "Pi Squad",
             "Solving advanced equations and math challenges together.",
             5,
+            20,
+            1,
             pi_members
         )
 
@@ -361,6 +367,8 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "Equation Elites",
             "Mastering formulas and algebraic proofs every week.",
             3,
+            15,
+            1,
             eq_members
         )
 
@@ -371,6 +379,8 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             "Trigonometry Titans",
             "Tackling geometry and trigonometric identities together.",
             2,
+            5,
+            1,
             tri_members
         )
 

@@ -1027,4 +1027,34 @@ async def create_circle_service(
     )
 
 
+async def leave_circle(
+    session: AsyncSession, user: DemoUser, circle_id: uuid.UUID
+) -> dict:
+    from sqlalchemy import delete
+    from app.models import CircleMembership
+    from app.api.errors import AppError
+
+    membership = await session.scalar(
+        select(CircleMembership).where(
+            CircleMembership.circle_id == circle_id,
+            CircleMembership.user_id == user.id,
+        )
+    )
+    if membership is None:
+        raise AppError(
+            status_code=400,
+            code="not_in_circle",
+            message="You are not a member of this StudyCircle.",
+        )
+
+    await session.execute(
+        delete(CircleMembership).where(
+            CircleMembership.circle_id == circle_id,
+            CircleMembership.user_id == user.id,
+        )
+    )
+    await session.commit()
+    return {"success": True, "message": "Successfully left the StudyCircle."}
+
+
 

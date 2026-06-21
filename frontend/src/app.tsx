@@ -10,6 +10,7 @@ import { JoinedCirclePage } from "@/pages/joined-circle-page";
 import { LandingPage } from "@/pages/landing-page";
 import { LeaderboardPage } from "@/pages/leaderboard-page";
 import { LoginPage } from "@/pages/login-page";
+import { LobbyPage } from "@/pages/lobby-page";
 import { OnboardingPage } from "@/pages/onboarding-page";
 import { RecommendedCirclePage } from "@/pages/recommended-circle-page";
 import { RoadmapPage } from "@/pages/roadmap-page";
@@ -36,6 +37,7 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route path="/app/home" element={<HomePage />} />
         <Route path="/app/study-circle/intro" element={<StudyCircleIntroPage />} />
+        <Route path="/app/study-circle/lobby" element={<LobbyPage />} />
         <Route path="/app/study-circle/recommended" element={<RecommendedCirclePage />} />
         <Route path="/app/study-circle/joined" element={<JoinedCirclePage />} />
         <Route path="/app/study-circle/:circleId/roadmap" element={<RoadmapPage />} />

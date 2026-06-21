@@ -55,7 +55,7 @@ async def test_recommendation_returns_explicit_no_match(
 ) -> None:
     _created, headers = await create_student(client)
     await db_session.execute(
-        update(Circle).where(Circle.id == CIRCLE_ID).values(subject="english")
+        update(Circle).values(subject="english")
     )
     await db_session.flush()
 
@@ -119,8 +119,8 @@ async def test_seed_is_idempotent() -> None:
     first = await seed_phase_one()
     second = await seed_phase_one()
     assert first == second == {
-        "circles": 1,
-        "fixture_users": 5,
+        "circles": 4,
+        "fixture_users": 10,
         "memberships": 5,
         "checkpoints": 5,
         "activity_events": 8,
@@ -177,4 +177,27 @@ async def test_concurrent_join_creates_one_membership_and_event() -> None:
             await cleanup.execute(delete(CircleMembership).where(CircleMembership.user_id == user_id))
             await cleanup.execute(delete(DemoUser).where(DemoUser.id == user_id))
             await cleanup.commit()
+
+
+@pytest.mark.asyncio
+async def test_leave_circle(client: AsyncClient, db_session: AsyncSession) -> None:
+    _created, headers = await create_student(client)
+
+    # Initially not in circle
+    leave_fail = await client.post(f"/api/v1/circles/{CIRCLE_ID}/leave", headers=headers)
+    assert leave_fail.status_code == 400
+    assert leave_fail.json()["code"] == "not_in_circle"
+
+    # Join circle
+    join = await client.post(f"/api/v1/circles/{CIRCLE_ID}/join", headers=headers)
+    assert join.status_code == 201
+
+    # Leave circle
+    leave = await client.post(f"/api/v1/circles/{CIRCLE_ID}/leave", headers=headers)
+    assert leave.status_code == 200
+    assert leave.json() == {"success": True, "message": "Successfully left the StudyCircle."}
+
+    # Verify no longer a member
+    membership = await client.get("/api/v1/me/circle-membership", headers=headers)
+    assert membership.json() == {"membership": None}
 

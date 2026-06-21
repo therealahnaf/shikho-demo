@@ -272,3 +272,8 @@ class CreateCircleRequest(BaseModel):
     description: str
 
 
+class LeaveCircleResponse(BaseModel):
+    success: bool
+    message: str
+
+
