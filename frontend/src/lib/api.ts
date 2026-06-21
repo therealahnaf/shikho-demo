@@ -24,6 +24,17 @@ export type CreateUserInput = {
 
 export type MemberUser = Pick<User, "id" | "username" | "display_name">;
 
+export type ActivityType = "review" | "lesson" | "quiz" | "challenge";
+
+export type Checkpoint = {
+  id: string;
+  position: number;
+  title: string;
+  activity_type: ActivityType;
+  topic_key: string;
+  status: "completed" | "current" | "locked";
+};
+
 export type Membership = {
   id: string;
   circle_id: string;
@@ -78,14 +89,7 @@ export type CircleHome = {
     title: string;
     starts_at: string;
     ends_at: string;
-    checkpoints: Array<{
-      id: string;
-      position: number;
-      title: string;
-      activity_type: "review" | "lesson" | "quiz" | "challenge";
-      topic_key: string;
-      status: "completed" | "current" | "locked";
-    }>;
+    checkpoints: Checkpoint[];
     member_positions: Array<{ user: MemberUser; position: number }>;
   };
   leaderboard: {
@@ -100,11 +104,54 @@ export type CircleHome = {
   };
   activity_feed: Array<{
     id: string;
-    event_type: "checkpoint_completed" | "rank_changed" | "member_joined";
+    event_type:
+      | "checkpoint_completed"
+      | "rank_changed"
+      | "member_joined"
+      | "daily_quest_completed"
+      | "streak_increased";
     actor: MemberUser | null;
     payload: Record<string, unknown>;
     created_at: string;
   }>;
+};
+
+export type RoadmapDetail = {
+  circle: CircleHome["circle"];
+  membership: Membership;
+  cycle: { id: string; starts_at: string; ends_at: string };
+  roadmap: CircleHome["roadmap"];
+  next_checkpoint: Checkpoint | null;
+};
+
+export type LeaderboardDetail = {
+  circle: CircleHome["circle"];
+  cycle: { id: string; starts_at: string; ends_at: string };
+  entries: CircleHome["leaderboard"]["entries"];
+  current_user_rank: number;
+  mentor: MemberUser | null;
+};
+
+export type ActivityFeed = { events: CircleHome["activity_feed"] };
+export type ActivityEvent = CircleHome["activity_feed"][number];
+
+export type CompletionResult = {
+  completion: {
+    id: string;
+    checkpoint_id: string;
+    activity_type: ActivityType;
+    points_awarded: number;
+    completed_at: string;
+  };
+  points_added: number;
+  previous_rank: number;
+  current_rank: number;
+  membership: Membership;
+  mission: CircleHome["mission"];
+  daily_quest: CircleHome["daily_quest"];
+  streak: CircleHome["streak"];
+  streak_increased: boolean;
+  next_checkpoint: Checkpoint | null;
 };
 
 export type ApiErrorBody = {
@@ -196,5 +243,32 @@ export const api = {
   getCircleHome(circleId: string) {
     return request<CircleHome>(`/api/v1/circles/${circleId}/home`, {}, true);
   },
+  getRoadmap(circleId: string) {
+    return request<RoadmapDetail>(
+      `/api/v1/circles/${circleId}/roadmap`,
+      {},
+      true,
+    );
+  },
+  getLeaderboard(circleId: string) {
+    return request<LeaderboardDetail>(
+      `/api/v1/circles/${circleId}/leaderboard`,
+      {},
+      true,
+    );
+  },
+  getActivityFeed(circleId: string, limit = 20) {
+    return request<ActivityFeed>(
+      `/api/v1/circles/${circleId}/activity-feed?limit=${limit}`,
+      {},
+      true,
+    );
+  },
+  completeCheckpoint(circleId: string, checkpointId: string) {
+    return request<CompletionResult>(
+      `/api/v1/circles/${circleId}/checkpoints/${checkpointId}/complete`,
+      { method: "POST" },
+      true,
+    );
+  },
 };
-

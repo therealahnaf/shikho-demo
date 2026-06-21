@@ -4,19 +4,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
-import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { api } from "@/lib/api";
 
 export function JoinedCirclePage() {
   const navigate = useNavigate();
-  const userQuery = useCurrentUser();
   const membershipQuery = useQuery({
     queryKey: ["membership"],
     queryFn: api.getMembership,
-    enabled: userQuery.isSuccess,
     retry: false,
   });
   useEffect(() => {
@@ -25,16 +21,15 @@ export function JoinedCirclePage() {
     }
   }, [membershipQuery.data, membershipQuery.isSuccess, navigate]);
 
-  if (userQuery.isPending || membershipQuery.isPending) return <AppPageLoading />;
-  if (userQuery.isError || membershipQuery.isError) {
-    return <AppPageError onRetry={() => void (userQuery.refetch(), membershipQuery.refetch())} />;
+  if (membershipQuery.isPending) return <AppPageLoading />;
+  if (membershipQuery.isError) {
+    return <AppPageError onRetry={() => void membershipQuery.refetch()} />;
   }
   const membership = membershipQuery.data.membership;
   if (!membership) return null;
 
   return (
-    <AppShell user={userQuery.data}>
-      <div className="mx-auto max-w-2xl py-10 text-center">
+    <div className="w-full py-10 text-center">
         <Card className="overflow-hidden border border-border shadow-sm">
           <CardContent className="p-8 sm:p-12">
             <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#ecfaf5] text-[#16785d]">
@@ -53,7 +48,6 @@ export function JoinedCirclePage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
-    </AppShell>
+    </div>
   );
 }

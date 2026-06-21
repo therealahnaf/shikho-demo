@@ -1,14 +1,18 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AccessKeyPage } from "@/pages/access-key-page";
+import { AppLayout } from "@/components/app-layout";
+import { ActivityPage } from "@/pages/activity-page";
 import { AppResolverPage } from "@/pages/app-resolver-page";
 import { CircleHomePage } from "@/pages/circle-home-page";
 import { HomePage } from "@/pages/home-page";
 import { JoinedCirclePage } from "@/pages/joined-circle-page";
 import { LandingPage } from "@/pages/landing-page";
+import { LeaderboardPage } from "@/pages/leaderboard-page";
 import { LoginPage } from "@/pages/login-page";
 import { OnboardingPage } from "@/pages/onboarding-page";
 import { RecommendedCirclePage } from "@/pages/recommended-circle-page";
+import { RoadmapPage } from "@/pages/roadmap-page";
 import { StudyCircleIntroPage } from "@/pages/study-circle-intro-page";
 
 export function AppRoutes() {
@@ -24,13 +28,17 @@ export function AppRoutes() {
       <Route path="/demo/login" element={<Navigate to="/login" replace />} />
 
       <Route path="/app" element={<AppResolverPage />} />
-      <Route path="/app/home" element={<HomePage />} />
-      <Route path="/app/study-circle/intro" element={<StudyCircleIntroPage />} />
-      <Route path="/app/study-circle/recommended" element={<RecommendedCirclePage />} />
-      <Route path="/app/study-circle/joined" element={<JoinedCirclePage />} />
-      <Route path="/app/study-circle/:circleId" element={<CircleHomePage />} />
+      <Route element={<AppLayout />}>
+        <Route path="/app/home" element={<HomePage />} />
+        <Route path="/app/study-circle/intro" element={<StudyCircleIntroPage />} />
+        <Route path="/app/study-circle/recommended" element={<RecommendedCirclePage />} />
+        <Route path="/app/study-circle/joined" element={<JoinedCirclePage />} />
+        <Route path="/app/study-circle/:circleId/roadmap" element={<RoadmapPage />} />
+        <Route path="/app/study-circle/:circleId/activity/:checkpointId" element={<ActivityPage />} />
+        <Route path="/app/study-circle/:circleId/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/app/study-circle/:circleId" element={<CircleHomePage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
-

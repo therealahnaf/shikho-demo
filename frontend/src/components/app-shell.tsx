@@ -80,8 +80,57 @@ const primaryNavigation: NavigationItem[] = [
   { label: "Settings", icon: Settings },
 ];
 
-export function AppShell({ user, children }: { user: User; children: React.ReactNode }) {
+function SidebarNavigation() {
   const location = useLocation();
+
+  return (
+    <SidebarContent>
+      <SidebarGroup className="px-2.5 py-3">
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-1.5">
+            {primaryNavigation.map((item) => {
+              const active = item.isFeature
+                ? location.pathname.includes("study-circle") || location.pathname === "/app"
+                : item.href === location.pathname;
+              const content = (
+                <>
+                  <item.icon />
+                  <span>{item.label}</span>
+                </>
+              );
+
+              return (
+                <SidebarMenuItem key={item.label}>
+                  {item.href ? (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.label}
+                      className="h-10 px-3 data-[active=true]:bg-[var(--brand-dark-blue)] data-[active=true]:text-white"
+                    >
+                      <Link to={item.href}>{content}</Link>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton tooltip={item.label} aria-disabled="true" className="h-10 px-3">
+                      {content}
+                    </SidebarMenuButton>
+                  )}
+                  {item.isFeature ? (
+                    <SidebarMenuBadge className="right-2.5 bg-[var(--brand-pink)] text-[10px] font-bold text-white">
+                      NEW
+                    </SidebarMenuBadge>
+                  ) : null}
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+  );
+}
+
+export function AppShell({ user, children }: { user: User; children: React.ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -156,49 +205,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
         className="sticky top-16 hidden h-[calc(100svh-4rem)] w-[13.5rem] shrink-0 border-r border-sidebar-border md:flex"
       >
 
-        <SidebarContent>
-          <SidebarGroup className="px-2.5 py-3">
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1.5">
-                {primaryNavigation.map((item) => {
-                  const active = item.isFeature
-                    ? location.pathname.includes("study-circle") || location.pathname === "/app"
-                    : item.href === location.pathname;
-                  const content = (
-                    <>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </>
-                  );
-
-                  return (
-                    <SidebarMenuItem key={item.label}>
-                      {item.href ? (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={active}
-                          tooltip={item.label}
-                          className="h-10 px-3 data-[active=true]:bg-[var(--brand-dark-blue)] data-[active=true]:text-white"
-                        >
-                          <Link to={item.href}>{content}</Link>
-                        </SidebarMenuButton>
-                      ) : (
-                        <SidebarMenuButton tooltip={item.label} aria-disabled="true" className="h-10 px-3">
-                          {content}
-                        </SidebarMenuButton>
-                      )}
-                      {item.isFeature ? (
-                        <SidebarMenuBadge className="right-2.5 bg-[var(--brand-pink)] text-[10px] font-bold text-white">
-                          NEW
-                        </SidebarMenuBadge>
-                      ) : null}
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
+        <SidebarNavigation />
 
         <SidebarFooter className="p-2">
           <SidebarMenu>
@@ -213,7 +220,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
       </Sidebar>
 
       <SidebarInset className="!w-0 min-h-[calc(100svh-4rem)] min-w-0 flex-1 overflow-x-hidden bg-[#f7f8fc]">
-        <div className="min-w-0 p-3 sm:p-4 lg:p-5">{children}</div>
+        <div className="w-full min-w-0 p-3 sm:p-4 lg:p-5">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

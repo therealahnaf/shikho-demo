@@ -17,8 +17,8 @@ import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
-import { AppShell } from "@/components/app-shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ActivityFeedItem } from "@/components/activity-feed-item";
+import { useAppUser } from "@/components/app-layout";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,8 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCaption, TableCell, TableRow } from "@/components/ui/table";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { api, ApiError, type CircleHome, type MemberUser } from "@/lib/api";
+import { api, ApiError, type MemberUser } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 function initials(name: string) {
@@ -51,21 +50,6 @@ function formatTimeRemaining(seconds: number) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   return hours > 0 ? `${hours}h ${minutes}m` : `${Math.max(1, minutes)}m`;
-}
-
-function relativeTime(value: string) {
-  const minutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60_000));
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
-
-function activityText(event: CircleHome["activity_feed"][number]) {
-  const name = event.actor?.display_name ?? "The circle";
-  if (event.event_type === "member_joined") return `${name} joined the circle.`;
-  if (event.event_type === "rank_changed") return `${name} moved to rank ${String(event.payload.rank)}.`;
-  return `${name} completed ${String(event.payload.checkpoint_title ?? "a roadmap checkpoint")}.`;
 }
 
 function AvatarStack({ users, max = 3 }: { users: MemberUser[]; max?: number }) {
@@ -111,11 +95,11 @@ function CardLabel({ icon: Icon, children }: { icon: React.ElementType; children
 export function CircleHomePage() {
   const { circleId = "" } = useParams();
   const navigate = useNavigate();
-  const userQuery = useCurrentUser();
+  const user = useAppUser();
   const homeQuery = useQuery({
     queryKey: ["circle-home", circleId],
     queryFn: () => api.getCircleHome(circleId),
-    enabled: userQuery.isSuccess && Boolean(circleId),
+    enabled: Boolean(circleId),
     retry: false,
   });
 
@@ -125,20 +109,19 @@ export function CircleHomePage() {
     }
   }, [homeQuery.error, navigate]);
 
-  if (userQuery.isPending || homeQuery.isPending) return <AppPageLoading />;
-  if (userQuery.isError || homeQuery.isError) {
-    return <AppPageError onRetry={() => void (userQuery.refetch(), homeQuery.refetch())} />;
+  if (homeQuery.isPending) return <AppPageLoading />;
+  if (homeQuery.isError) {
+    return <AppPageError onRetry={() => void homeQuery.refetch()} />;
   }
 
   const data = homeQuery.data;
-  const firstName = userQuery.data.display_name.split(/\s+/)[0];
+  const firstName = user.display_name.split(/\s+/)[0];
   const endDate = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
     new Date(data.mission.ends_at),
   );
 
   return (
-    <AppShell user={userQuery.data}>
-      <div className="w-full space-y-4">
+    <div className="w-full space-y-4">
         <div className="space-y-2">
           <Breadcrumb>
             <BreadcrumbList className="text-xs">
@@ -216,8 +199,8 @@ export function CircleHomePage() {
                 <CardLabel icon={Map}>Weekly Roadmap</CardLabel>
                 <CardTitle className="mt-2 text-sm">{data.roadmap.title}</CardTitle>
               </div>
-              <Button size="sm" disabled className="disabled:bg-[#e7eaf2] disabled:text-muted-foreground disabled:opacity-100">
-                <BookOpenCheck /> Continue Roadmap
+              <Button asChild size="sm">
+                <Link to={`/app/study-circle/${circleId}/roadmap`}><BookOpenCheck /> Continue Roadmap</Link>
               </Button>
             </CardHeader>
             <CardContent className="p-4 pt-3">
@@ -255,10 +238,6 @@ export function CircleHomePage() {
                   })}
                 </div>
               </div>
-              <Alert className="mt-2 border-[#ccd7ef] bg-[#eef3ff] py-2 text-[var(--brand-dark-blue)]">
-                <LockKeyhole />
-                <AlertDescription>Roadmap activities are not available yet.</AlertDescription>
-              </Alert>
             </CardContent>
           </Card>
 
@@ -281,7 +260,10 @@ export function CircleHomePage() {
           <Card className="overflow-hidden border-0 shadow-sm">
             <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
               <CardLabel icon={Trophy}>Leaderboard · This Week</CardLabel>
-              <Badge variant="secondary" className="bg-[#eef3ff] text-[var(--brand-dark-blue)]">Your rank #{data.leaderboard.current_user_rank}</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-[#eef3ff] text-[var(--brand-dark-blue)]">Your rank #{data.leaderboard.current_user_rank}</Badge>
+                <Button asChild size="sm" variant="outline"><Link to={`/app/study-circle/${circleId}/leaderboard`}>View full leaderboard</Link></Button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -318,17 +300,7 @@ export function CircleHomePage() {
             <CardContent className="p-0">
               {data.activity_feed.length ? data.activity_feed.map((event, index) => (
                 <div key={event.id}>
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <Avatar className="size-8">
-                      <AvatarFallback className="bg-[#e7eefc] text-[10px] font-bold text-[var(--brand-dark-blue)]">
-                        {event.actor ? initials(event.actor.display_name) : "SC"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs leading-5">{activityText(event)}</p>
-                      <p className="text-[10px] text-muted-foreground">{relativeTime(event.created_at)}</p>
-                    </div>
-                  </div>
+                  <ActivityFeedItem event={event} />
                   {index < data.activity_feed.length - 1 ? <Separator /> : null}
                 </div>
               )) : (
@@ -340,7 +312,6 @@ export function CircleHomePage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </AppShell>
+    </div>
   );
 }

@@ -4,20 +4,19 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
-import { AppShell, CohortBadge } from "@/components/app-shell";
+import { useAppUser } from "@/components/app-layout";
+import { CohortBadge } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { api } from "@/lib/api";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const userQuery = useCurrentUser();
+  const user = useAppUser();
   const membershipQuery = useQuery({
     queryKey: ["membership"],
     queryFn: api.getMembership,
-    enabled: userQuery.isSuccess,
     retry: false,
   });
 
@@ -26,15 +25,13 @@ export function HomePage() {
     if (membership) navigate(`/app/study-circle/${membership.circle_id}`, { replace: true });
   }, [membershipQuery.data, navigate]);
 
-  if (userQuery.isPending || membershipQuery.isPending) return <AppPageLoading />;
-  if (userQuery.isError || membershipQuery.isError) {
-    return <AppPageError onRetry={() => void (userQuery.refetch(), membershipQuery.refetch())} />;
+  if (membershipQuery.isPending) return <AppPageLoading />;
+  if (membershipQuery.isError) {
+    return <AppPageError onRetry={() => void membershipQuery.refetch()} />;
   }
 
-  const user = userQuery.data;
   return (
-    <AppShell user={user}>
-      <div className="mx-auto max-w-6xl">
+    <div className="w-full">
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <CohortBadge />
@@ -70,7 +67,6 @@ export function HomePage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </AppShell>
+    </div>
   );
 }

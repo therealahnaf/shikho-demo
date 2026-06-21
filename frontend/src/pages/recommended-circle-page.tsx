@@ -4,25 +4,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
-import { AppShell, CohortBadge } from "@/components/app-shell";
+import { CohortBadge } from "@/components/app-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { api, ApiError } from "@/lib/api";
 
 export function RecommendedCirclePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const userQuery = useCurrentUser();
   const [joinError, setJoinError] = useState<string | null>(null);
   const recommendationQuery = useQuery({
     queryKey: ["recommended-circle"],
     queryFn: api.getRecommendedCircle,
-    enabled: userQuery.isSuccess,
     retry: false,
   });
   const joinMutation = useMutation({
@@ -34,15 +31,14 @@ export function RecommendedCirclePage() {
     onError: (error) => setJoinError(error instanceof ApiError ? error.message : "Could not join the circle."),
   });
 
-  if (userQuery.isPending || recommendationQuery.isPending) return <AppPageLoading />;
-  if (userQuery.isError || recommendationQuery.isError) {
-    return <AppPageError onRetry={() => void (userQuery.refetch(), recommendationQuery.refetch())} />;
+  if (recommendationQuery.isPending) return <AppPageLoading />;
+  if (recommendationQuery.isError) {
+    return <AppPageError onRetry={() => void recommendationQuery.refetch()} />;
   }
 
   const circle = recommendationQuery.data.data;
   return (
-    <AppShell user={userQuery.data}>
-      <div className="mx-auto max-w-3xl py-4">
+    <div className="w-full py-4">
         <div className="text-center">
           <CohortBadge />
           <h1 className="mt-5 text-4xl font-black tracking-[-0.05em] text-[var(--brand-dark-blue)] sm:text-5xl">
@@ -107,7 +103,6 @@ export function RecommendedCirclePage() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </AppShell>
+    </div>
   );
 }

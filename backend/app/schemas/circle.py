@@ -123,7 +123,13 @@ class LeaderboardPreview(BaseModel):
 
 class ActivityEventView(BaseModel):
     id: uuid.UUID
-    event_type: Literal["checkpoint_completed", "rank_changed", "member_joined"]
+    event_type: Literal[
+        "checkpoint_completed",
+        "rank_changed",
+        "member_joined",
+        "daily_quest_completed",
+        "streak_increased",
+    ]
     actor: MemberUser | None
     payload: dict[str, Any]
     created_at: datetime
@@ -140,3 +146,49 @@ class CircleHomeResponse(BaseModel):
     leaderboard: LeaderboardPreview
     activity_feed: list[ActivityEventView]
 
+
+class WeeklyCycleView(BaseModel):
+    id: uuid.UUID
+    starts_at: datetime
+    ends_at: datetime
+
+
+class RoadmapDetailResponse(BaseModel):
+    circle: CircleSummary
+    membership: MembershipSummary
+    cycle: WeeklyCycleView
+    roadmap: RoadmapPreview
+    next_checkpoint: CheckpointView | None
+
+
+class LeaderboardResponse(BaseModel):
+    circle: CircleSummary
+    cycle: WeeklyCycleView
+    entries: list[LeaderboardEntry]
+    current_user_rank: int
+    mentor: MemberUser | None
+
+
+class ActivityFeedResponse(BaseModel):
+    events: list[ActivityEventView]
+
+
+class ActivityCompletionView(BaseModel):
+    id: uuid.UUID
+    checkpoint_id: uuid.UUID
+    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+    points_awarded: int
+    completed_at: datetime
+
+
+class CompletionResponse(BaseModel):
+    completion: ActivityCompletionView
+    points_added: int
+    previous_rank: int
+    current_rank: int
+    membership: MembershipSummary
+    mission: MissionView
+    daily_quest: DailyQuestView
+    streak: CircleStreakView
+    streak_increased: bool
+    next_checkpoint: CheckpointView | None

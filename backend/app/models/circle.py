@@ -169,7 +169,10 @@ class CircleState(Base):
 class ActivityEvent(Base):
     __tablename__ = "activity_events"
     __table_args__ = (
-        CheckConstraint("event_type IN ('checkpoint_completed', 'rank_changed', 'member_joined')", name="event_type"),
+        CheckConstraint(
+            "event_type IN ('checkpoint_completed', 'rank_changed', 'member_joined', 'daily_quest_completed', 'streak_increased')",
+            name="event_type",
+        ),
         Index("ix_activity_events_circle_created", "circle_id", text("created_at DESC")),
     )
 
@@ -182,3 +185,42 @@ class ActivityEvent(Base):
     )
     dedupe_key: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ActivityCompletion(Base):
+    __tablename__ = "activity_completions"
+    __table_args__ = (
+        CheckConstraint(
+            "activity_type IN ('review', 'lesson', 'quiz', 'challenge')",
+            name="activity_type",
+        ),
+        CheckConstraint("points_awarded = 30", name="points_awarded"),
+        UniqueConstraint(
+            "weekly_cycle_id",
+            "roadmap_checkpoint_id",
+            "user_id",
+            name="uq_activity_completions_cycle_checkpoint_user",
+        ),
+        Index("ix_activity_completions_user_cycle", "user_id", "weekly_cycle_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    circle_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("circles.id", ondelete="CASCADE"), nullable=False
+    )
+    weekly_cycle_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("weekly_cycles.id", ondelete="CASCADE"), nullable=False
+    )
+    roadmap_checkpoint_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("roadmap_checkpoints.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("demo_users.id", ondelete="CASCADE"), nullable=False
+    )
+    activity_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    points_awarded: Mapped[int] = mapped_column(Integer, nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

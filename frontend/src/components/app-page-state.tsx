@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function AppPageLoading() {
   return (
-    <div className="mx-auto max-w-6xl space-y-5" aria-label="Loading StudyCircle">
+    <div className="w-full space-y-5" aria-label="Loading StudyCircle">
       <Skeleton className="h-8 w-52" />
       <Skeleton className="h-52 w-full rounded-[2rem]" />
       <div className="grid gap-5 md:grid-cols-2">
@@ -29,4 +29,3 @@ export function AppPageError({ onRetry }: { onRetry: () => void }) {
     </div>
   );
 }
-
