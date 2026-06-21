@@ -129,6 +129,7 @@ class ActivityEventView(BaseModel):
         "member_joined",
         "daily_quest_completed",
         "streak_increased",
+        "note_created",
     ]
     actor: MemberUser | None
     payload: dict[str, Any]

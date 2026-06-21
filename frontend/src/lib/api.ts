@@ -109,7 +109,8 @@ export type CircleHome = {
       | "rank_changed"
       | "member_joined"
       | "daily_quest_completed"
-      | "streak_increased";
+      | "streak_increased"
+      | "note_created";
     actor: MemberUser | null;
     payload: Record<string, unknown>;
     created_at: string;
@@ -180,7 +181,9 @@ async function request<T>(
   protectedRequest = false,
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set("Content-Type", "application/json");
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (protectedRequest) {
     const credentials = getCredentials();
@@ -202,6 +205,36 @@ async function request<T>(
   }
   return body as T;
 }
+
+async function requestBlob(path: string): Promise<Blob> {
+  const headers = new Headers();
+  const credentials = getCredentials();
+  if (credentials) {
+    headers.set("X-Demo-Username", credentials.username);
+    headers.set("X-Demo-Access-Key", credentials.accessKey);
+  }
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body ?? { code: "request_failed", message: "We could not load that image.", fields: {} });
+  }
+  return response.blob();
+}
+
+export type NoteCategory = "chapter_1" | "chapter_2" | "formulas" | "revision_notes" | "important_questions";
+export type CircleNote = {
+  id: string;
+  title: string;
+  category: NoteCategory;
+  content_type: "text" | "image";
+  author: MemberUser;
+  helpful_count: number;
+  helpful_by_me: boolean;
+  is_own_note: boolean;
+  created_at: string;
+};
+export type CircleNoteDetail = CircleNote & { text_content: string | null; image_url: string | null };
+export type CreateNoteResult = { note: CircleNoteDetail; points_added: number; previous_rank: number; current_rank: number };
 
 export const api = {
   createUser(input: CreateUserInput) {
@@ -268,6 +301,30 @@ export const api = {
     return request<CompletionResult>(
       `/api/v1/circles/${circleId}/checkpoints/${checkpointId}/complete`,
       { method: "POST" },
+      true,
+    );
+  },
+  getNotes(circleId: string, category?: NoteCategory) {
+    const query = category ? `?category=${category}` : "";
+    return request<{ notes: CircleNote[] }>(`/api/v1/circles/${circleId}/notes${query}`, {}, true);
+  },
+  getNote(circleId: string, noteId: string) {
+    return request<CircleNoteDetail>(`/api/v1/circles/${circleId}/notes/${noteId}`, {}, true);
+  },
+  createNote(circleId: string, data: FormData, idempotencyKey: string) {
+    return request<CreateNoteResult>(`/api/v1/circles/${circleId}/notes`, {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: data,
+    }, true);
+  },
+  getNoteImage(path: string) {
+    return requestBlob(path);
+  },
+  setNoteHelpful(circleId: string, noteId: string, helpful: boolean) {
+    return request<{ note_id: string; helpful_count: number; helpful_by_me: boolean }>(
+      `/api/v1/circles/${circleId}/notes/${noteId}/helpful`,
+      { method: helpful ? "PUT" : "DELETE" },
       true,
     );
   },

@@ -5,6 +5,7 @@ from app.api.handlers import install_error_handlers
 from app.api.routes.demo_access import router as demo_access_router
 from app.api.routes.circles import router as circles_router
 from app.api.routes.health import router as health_router
+from app.api.routes.notes import router as notes_router
 from app.config import get_settings
 
 
@@ -20,13 +21,14 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[settings.frontend_origin],
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "X-Demo-Username", "X-Demo-Access-Key"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Idempotency-Key", "X-Demo-Username", "X-Demo-Access-Key"],
     )
     install_error_handlers(application)
     application.include_router(health_router)
     application.include_router(demo_access_router)
     application.include_router(circles_router)
+    application.include_router(notes_router)
     return application
 
 

@@ -14,6 +14,9 @@ import { OnboardingPage } from "@/pages/onboarding-page";
 import { RecommendedCirclePage } from "@/pages/recommended-circle-page";
 import { RoadmapPage } from "@/pages/roadmap-page";
 import { StudyCircleIntroPage } from "@/pages/study-circle-intro-page";
+import { CircleStorePage } from "@/pages/circle-store-page";
+import { NewNotePage } from "@/pages/new-note-page";
+import { NoteDetailPage } from "@/pages/note-detail-page";
 
 export function AppRoutes() {
   return (
@@ -36,6 +39,9 @@ export function AppRoutes() {
         <Route path="/app/study-circle/:circleId/roadmap" element={<RoadmapPage />} />
         <Route path="/app/study-circle/:circleId/activity/:checkpointId" element={<ActivityPage />} />
         <Route path="/app/study-circle/:circleId/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/app/study-circle/:circleId/store" element={<CircleStorePage />} />
+        <Route path="/app/study-circle/:circleId/store/new" element={<NewNotePage />} />
+        <Route path="/app/study-circle/:circleId/store/:noteId" element={<NoteDetailPage />} />
         <Route path="/app/study-circle/:circleId" element={<CircleHomePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

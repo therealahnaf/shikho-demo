@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from datetime import datetime, time, timedelta, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -16,6 +17,7 @@ from app.models import (
     DailyQuest,
     DemoUser,
     Mission,
+    Note,
     Roadmap,
     RoadmapCheckpoint,
     WeeklyCycle,
@@ -89,6 +91,15 @@ CHECKPOINTS = [
     ("Review Common Mistakes", "review", "algebra_mistakes"),
     ("Weekly Algebra Challenge", "challenge", "weekly_challenge"),
 ]
+
+SEEDED_NOTES = [
+    ("a0000000-0000-0000-0000-000000000001", 0, "Quadratic formula quick guide", "formulas", "Keep the quadratic formula beside your practice work: x = (-b ± √(b² - 4ac)) / 2a. Check the discriminant first to understand the roots."),
+    ("a0000000-0000-0000-0000-000000000002", 1, "Chapter 1 sign rules", "chapter_1", "When multiplying or dividing integers, matching signs produce a positive result and different signs produce a negative result."),
+    ("a0000000-0000-0000-0000-000000000003", 2, "Linear equation revision checklist", "revision_notes", "Collect like terms, move variable terms to one side, isolate the variable, and substitute the answer back into the original equation."),
+    ("a0000000-0000-0000-0000-000000000004", 3, "Important factorisation question", "important_questions", "Try factorising x² + 7x + 12 without expanding guesses. Look for two numbers whose product is 12 and whose sum is 7."),
+]
+
+TINY_PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
 
 
 def current_periods(now: datetime) -> dict[str, datetime | int]:
@@ -269,6 +280,60 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
         for event in seeded_events:
             await session.merge(event)
 
+        for index, (note_id, author_index, title, category, content) in enumerate(SEEDED_NOTES):
+            await session.merge(
+                Note(
+                    id=UUID(note_id),
+                    circle_id=CIRCLE_ID,
+                    author_user_id=PEERS[author_index]["id"],
+                    title=title,
+                    category=category,
+                    content_type="text",
+                    text_content=content,
+                    idempotency_key=f"seed-note-{index + 1}",
+                    created_at=now - timedelta(hours=6 + index),
+                )
+            )
+            await session.merge(
+                ActivityEvent(
+                    id=UUID(f"b0000000-0000-0000-0000-{index + 1:012d}"),
+                    circle_id=CIRCLE_ID,
+                    actor_user_id=PEERS[author_index]["id"],
+                    event_type="note_created",
+                    payload={"note_id": note_id, "title": title, "category": category, "content_type": "text"},
+                    dedupe_key=f"seed:note:{index + 1}:created",
+                    created_at=now - timedelta(hours=6 + index),
+                )
+            )
+
+        image_note_id = UUID("a0000000-0000-0000-0000-000000000005")
+        await session.merge(
+            Note(
+                id=image_note_id,
+                circle_id=CIRCLE_ID,
+                author_user_id=PEERS[4]["id"],
+                title="Algebra identity card",
+                category="chapter_2",
+                content_type="image",
+                image_bytes=TINY_PNG,
+                image_mime_type="image/png",
+                image_size=len(TINY_PNG),
+                idempotency_key="seed-note-5",
+                created_at=now - timedelta(hours=11),
+            )
+        )
+        await session.merge(
+            ActivityEvent(
+                id=UUID("b0000000-0000-0000-0000-000000000005"),
+                circle_id=CIRCLE_ID,
+                actor_user_id=PEERS[4]["id"],
+                event_type="note_created",
+                payload={"note_id": str(image_note_id), "title": "Algebra identity card", "category": "chapter_2", "content_type": "image"},
+                dedupe_key="seed:note:5:created",
+                created_at=now - timedelta(hours=11),
+            )
+        )
+
         await session.commit()
 
         return {
@@ -284,6 +349,9 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             ),
             "activity_events": await session.scalar(
                 select(func.count()).select_from(ActivityEvent).where(ActivityEvent.circle_id == CIRCLE_ID)
+            ),
+            "notes": await session.scalar(
+                select(func.count()).select_from(Note).where(Note.circle_id == CIRCLE_ID)
             ),
         }
 

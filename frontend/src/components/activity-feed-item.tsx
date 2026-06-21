@@ -34,6 +34,8 @@ function eventText(event: ActivityEvent) {
       return "The circle completed today’s quest.";
     case "streak_increased":
       return `The circle streak increased to ${String(event.payload.days)} days.`;
+    case "note_created":
+      return `${name} shared ${String(event.payload.title ?? "a note")} in Circle Store.`;
   }
 }
 

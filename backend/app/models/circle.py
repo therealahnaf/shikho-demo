@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -170,7 +171,7 @@ class ActivityEvent(Base):
     __tablename__ = "activity_events"
     __table_args__ = (
         CheckConstraint(
-            "event_type IN ('checkpoint_completed', 'rank_changed', 'member_joined', 'daily_quest_completed', 'streak_increased')",
+            "event_type IN ('checkpoint_completed', 'rank_changed', 'member_joined', 'daily_quest_completed', 'streak_increased', 'note_created')",
             name="event_type",
         ),
         Index("ix_activity_events_circle_created", "circle_id", text("created_at DESC")),
@@ -224,3 +225,44 @@ class ActivityCompletion(Base):
     completed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class Note(Base):
+    __tablename__ = "notes"
+    __table_args__ = (
+        CheckConstraint("category IN ('chapter_1', 'chapter_2', 'formulas', 'revision_notes', 'important_questions')", name="category"),
+        CheckConstraint("content_type IN ('text', 'image')", name="content_type"),
+        CheckConstraint("(content_type = 'text' AND text_content IS NOT NULL AND image_bytes IS NULL AND image_mime_type IS NULL AND image_size IS NULL) OR (content_type = 'image' AND text_content IS NULL AND image_bytes IS NOT NULL AND image_mime_type IS NOT NULL AND image_size IS NOT NULL)", name="content_mode"),
+        CheckConstraint("text_content IS NULL OR char_length(text_content) BETWEEN 20 AND 2000", name="text_length"),
+        CheckConstraint("image_size IS NULL OR image_size BETWEEN 1 AND 2097152", name="image_size"),
+        UniqueConstraint("author_user_id", "idempotency_key", name="uq_notes_author_idempotency"),
+        Index("ix_notes_circle_created", "circle_id", text("created_at DESC")),
+        Index("ix_notes_circle_category_created", "circle_id", "category", text("created_at DESC")),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    circle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("circles.id", ondelete="CASCADE"), nullable=False)
+    author_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("demo_users.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    category: Mapped[str] = mapped_column(String(40), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    text_content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    image_mime_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    image_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class NoteReaction(Base):
+    __tablename__ = "note_reactions"
+    __table_args__ = (
+        CheckConstraint("reaction_type = 'helpful'", name="reaction_type"),
+        UniqueConstraint("note_id", "user_id", "reaction_type", name="uq_note_reactions_note_user_type"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    note_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("demo_users.id", ondelete="CASCADE"), nullable=False)
+    reaction_type: Mapped[str] = mapped_column(String(20), default="helpful", server_default="helpful", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

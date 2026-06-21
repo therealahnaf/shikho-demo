@@ -6,6 +6,7 @@ import {
   Crown,
   Flame,
   LockKeyhole,
+  LibraryBig,
   Map,
   Sparkles,
   Target,
@@ -137,9 +138,10 @@ export function CircleHomePage() {
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back, {firstName}! 👋</h1>
               <p className="mt-1 text-sm text-muted-foreground">Let&apos;s learn and win together.</p>
             </div>
-            <Badge variant="outline" className="border-[#b7c6e8] bg-white text-[var(--brand-dark-blue)]">
-              Class 10 · Mathematics
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]"><Link to={`/app/study-circle/${circleId}/store`}><LibraryBig className="size-4" /> Circle Store</Link></Button>
+              <Badge variant="outline" className="border-[#b7c6e8] bg-white text-[var(--brand-dark-blue)]">Class 10 · Mathematics</Badge>
+            </div>
           </div>
         </div>
 
