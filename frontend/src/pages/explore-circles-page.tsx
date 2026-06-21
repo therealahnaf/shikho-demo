@@ -9,6 +9,7 @@ import {
   UsersRound,
   ArrowLeft,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -94,12 +95,22 @@ export function ExploreCirclesPage() {
     queryFn: api.getCircles,
   });
 
+  // Retrieve current user membership
+  const { data: membershipData } = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
+  });
+
   // Retrieve Selected Circle Members
   const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ["circle-members", selectedCircle?.id],
     queryFn: () => selectedCircle ? api.getCircleMembers(selectedCircle.id) : Promise.resolve({ members: [] }),
     enabled: !!selectedCircle,
   });
+
+  // Derived state — after all hooks
+  const currentCircleId = membershipData?.membership?.circle_id ?? null;
+  const isInSelectedCircle = selectedCircle !== null && currentCircleId === selectedCircle.id;
 
   if (circlesLoading) {
     return (
@@ -203,31 +214,46 @@ export function ExploreCirclesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedCircles.map((circle) => (
-                    <TableRow
-                      key={circle.id}
-                      onClick={() => {
-                        setJoinError(null);
-                        setSelectedCircle(circle);
-                      }}
-                      className="cursor-pointer border-slate-100 hover:bg-slate-50/80 transition-colors"
-                    >
-                      <TableCell className="font-bold text-slate-950 pl-6 py-4">
-                        {circle.name}
-                      </TableCell>
-                      <TableCell className="text-slate-600 py-4 max-w-md truncate">
-                        {circle.description}
-                      </TableCell>
-                      <TableCell className="text-center py-4">
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-800 border-none font-semibold">
-                          {circle.member_count} / 10
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right py-4 pr-6 font-bold text-indigo-600">
-                        {circle.points} pts
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {paginatedCircles.map((circle) => {
+                    const isMyCircle = currentCircleId === circle.id;
+                    return (
+                      <TableRow
+                        key={circle.id}
+                        onClick={() => {
+                          setJoinError(null);
+                          setSelectedCircle(circle);
+                        }}
+                        className={cn(
+                          "cursor-pointer border-slate-100 transition-colors",
+                          isMyCircle
+                            ? "bg-indigo-50/60 hover:bg-indigo-50"
+                            : "hover:bg-slate-50/80"
+                        )}
+                      >
+                        <TableCell className="font-bold text-slate-950 pl-6 py-4">
+                          <span className="flex items-center gap-2">
+                            {circle.name}
+                            {isMyCircle && (
+                              <Badge className="bg-indigo-100 text-indigo-700 border-none text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5">
+                                Your Circle
+                              </Badge>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-slate-600 py-4 max-w-md truncate">
+                          {circle.description}
+                        </TableCell>
+                        <TableCell className="text-center py-4">
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-800 border-none font-semibold">
+                            {circle.member_count} / 10
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right py-4 pr-6 font-bold text-indigo-600">
+                          {circle.points} pts
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -373,14 +399,24 @@ export function ExploreCirclesPage() {
               >
                 Close
               </Button>
-              <Button
-                onClick={() => handleJoinCircle(selectedCircle.id)}
-                disabled={isJoining || selectedCircle.member_count >= 10}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-1.5"
-              >
-                {isJoining && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isJoining ? "Joining..." : selectedCircle.member_count >= 10 ? "Circle Full" : "Join Circle"}
-              </Button>
+              {isInSelectedCircle ? (
+                <Button
+                  onClick={() => navigate(`/app/study-circle/${selectedCircle.id}`)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-1.5"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleJoinCircle(selectedCircle.id)}
+                  disabled={isJoining || selectedCircle.member_count >= 10}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-1.5"
+                >
+                  {isJoining && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isJoining ? "Joining..." : selectedCircle.member_count >= 10 ? "Circle Full" : "Join Circle"}
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         )}

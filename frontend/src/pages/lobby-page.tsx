@@ -64,6 +64,9 @@ export function LobbyPage() {
   const [newCircleDesc, setNewCircleDesc] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // Hover state for constellation (must be declared before early returns)
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+
   // Handle joining a circle
   const handleJoinCircle = async (circleId: string) => {
     setIsJoining(true);
@@ -211,8 +214,7 @@ export function LobbyPage() {
     }
   }
 
-  // Hover state
-  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_2fr] lg:items-start max-w-7xl mx-auto">

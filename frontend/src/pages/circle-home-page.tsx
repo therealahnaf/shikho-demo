@@ -14,6 +14,7 @@ import {
   Trophy,
   UsersRound,
   Zap,
+  HelpCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -145,6 +146,57 @@ function InfoHoverCard({ title, description, funFact }: InfoHoverCardProps) {
   );
 }
 
+interface TourStep {
+  id: string;
+  title: string;
+  description: string;
+  funFact: string;
+}
+
+const TOUR_STEPS: TourStep[] = [
+  {
+    id: "tour-step-mission",
+    title: "Monthly Circle Mission 🎯",
+    description: "Collaborate with your 10 circle members to complete this major goal. Every single action counts towards your team points!",
+    funFact: "Circles completing monthly missions gain a massive boost in the Subject leaderboards.",
+  },
+  {
+    id: "tour-step-quest",
+    title: "Daily Circle Quest ⚡",
+    description: "A quick-fire goal for the entire circle that resets at midnight. Work together to finish it in time!",
+    funFact: "Consistency is key: completing daily quests boosts your individual points by 15%!",
+  },
+  {
+    id: "tour-step-streak",
+    title: "Circle Streak 🔥",
+    description: "Keep the fire burning! At least one member of your circle must complete an activity every day to keep the streak alive. If it hits 0, the circle dies.",
+    funFact: "A dead circle cannot be revived. Work together to keep your community alive!",
+  },
+  {
+    id: "tour-step-roadmap",
+    title: "Weekly Roadmap 🗺️",
+    description: "Your weekly study guide based on the syllabus. This is selected by the weekly Mentor to keep everyone focused.",
+    funFact: "Completing roadmap milestones helps your circle progress faster.",
+  },
+  {
+    id: "tour-step-mentor",
+    title: "Mentor of the Week 👑",
+    description: "The student placing 1st in the leaderboard last week becomes the Mentor. They hold the power to choose the next roadmap!",
+    funFact: "With great power comes great responsibility. Lead your circle to victory!",
+  },
+  {
+    id: "tour-step-leaderboard",
+    title: "Leaderboard · This Week 🏆",
+    description: "Check out the friendly competition inside your circle. The top student at the end of the week becomes next week's Mentor!",
+    funFact: "Points are earned from daily quests, monthly missions, and roadmap progress.",
+  },
+  {
+    id: "tour-step-activity",
+    title: "Recent Activity ✨",
+    description: "A live feed showing the latest study contributions, note uploads, and completions from your circle members.",
+    funFact: "Support your peers! Head over to the Circle Store to upvote helpful notes.",
+  },
+];
 
 export function CircleHomePage() {
   const { circleId = "" } = useParams();
@@ -153,6 +205,38 @@ export function CircleHomePage() {
   const queryClient = useQueryClient();
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [tourStep, setTourStep] = useState<number | null>(null);
+
+  const handleNextStep = () => {
+    if (tourStep === null) return;
+    if (tourStep < TOUR_STEPS.length - 1) {
+      setTourStep(tourStep + 1);
+    } else {
+      handleCompleteTour();
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (tourStep === null) return;
+    if (tourStep > 0) {
+      setTourStep(tourStep - 1);
+    }
+  };
+
+  const handleCompleteTour = () => {
+    setTourStep(null);
+    localStorage.setItem("shikho_circle_dashboard_tutorial_completed", "true");
+  };
+
+  const scrollToStep = (index: number) => {
+    const step = TOUR_STEPS[index];
+    setTimeout(() => {
+      const el = document.getElementById(step.id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+  };
 
   const homeQuery = useQuery({
     queryKey: ["circle-home", circleId],
@@ -160,6 +244,24 @@ export function CircleHomePage() {
     enabled: Boolean(circleId),
     retry: false,
   });
+
+  useEffect(() => {
+    if (tourStep !== null) {
+      scrollToStep(tourStep);
+    }
+  }, [tourStep]);
+
+  useEffect(() => {
+    if (homeQuery.data) {
+      const completed = localStorage.getItem("shikho_circle_dashboard_tutorial_completed");
+      if (!completed) {
+        const timer = setTimeout(() => {
+          setTourStep(0);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [homeQuery.data]);
 
   useEffect(() => {
     if (homeQuery.error instanceof ApiError && homeQuery.error.status === 403) {
@@ -212,6 +314,9 @@ export function CircleHomePage() {
               <p className="mt-1 text-sm text-muted-foreground">Let&apos;s learn and win together.</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]" onClick={() => setTourStep(0)}>
+                <HelpCircle className="size-4" /> Tour Tutorial
+              </Button>
               <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]">
                 <Link to="/app/study-circle/lobby">
                   <UsersRound className="size-4" /> Circle Lobby
@@ -226,9 +331,14 @@ export function CircleHomePage() {
           </div>
         </div>
 
-
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px]">
-          <Card className="border-0 shadow-sm">
+          <Card
+            id="tour-step-mission"
+            className={cn(
+              "border-0 shadow-sm transition-all duration-300",
+              tourStep === 0 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardHeader className="p-4 pb-2">
               <div className="flex items-center justify-between gap-3">
                 <CardLabel icon={Target}>
@@ -253,7 +363,13 @@ export function CircleHomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm">
+          <Card
+            id="tour-step-quest"
+            className={cn(
+              "border-0 shadow-sm transition-all duration-300",
+              tourStep === 1 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardHeader className="p-4 pb-2">
               <div className="flex items-center justify-between gap-3">
                 <CardLabel icon={Zap}>
@@ -280,7 +396,13 @@ export function CircleHomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm lg:col-span-2 xl:col-span-1">
+          <Card
+            id="tour-step-streak"
+            className={cn(
+              "border-0 shadow-sm lg:col-span-2 xl:col-span-1 transition-all duration-300",
+              tourStep === 2 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardContent className="flex h-full min-h-40 flex-col items-center justify-center p-4 text-center">
               <CardLabel icon={Flame}>
                 Circle Streak
@@ -298,7 +420,13 @@ export function CircleHomePage() {
         </div>
 
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px]">
-          <Card className="border-0 shadow-sm">
+          <Card
+            id="tour-step-roadmap"
+            className={cn(
+              "border-0 shadow-sm transition-all duration-300",
+              tourStep === 3 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
               <div>
                 <CardLabel icon={Map}>
@@ -364,7 +492,13 @@ export function CircleHomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm">
+          <Card
+            id="tour-step-mentor"
+            className={cn(
+              "border-0 shadow-sm transition-all duration-300",
+              tourStep === 4 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardContent className="flex h-full min-h-52 flex-col items-center justify-center p-4 text-center">
               <CardLabel icon={Crown}>
                 Mentor of the Week
@@ -387,7 +521,13 @@ export function CircleHomePage() {
         </div>
 
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
-          <Card className="overflow-hidden border-0 shadow-sm">
+          <Card
+            id="tour-step-leaderboard"
+            className={cn(
+              "overflow-hidden border-0 shadow-sm transition-all duration-300",
+              tourStep === 5 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
               <CardLabel icon={Trophy}>
                 Leaderboard · This Week
@@ -430,7 +570,13 @@ export function CircleHomePage() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 shadow-sm">
+          <Card
+            id="tour-step-activity"
+            className={cn(
+              "overflow-hidden border-0 shadow-sm transition-all duration-300",
+              tourStep === 6 ? "relative z-50 bg-white ring-4 ring-[var(--brand-pink)] ring-offset-2 scale-[1.02] shadow-2xl" : ""
+            )}
+          >
             <CardHeader className="p-4 pb-2">
               <CardLabel icon={Sparkles}>
                 Recent Activity
@@ -481,6 +627,83 @@ export function CircleHomePage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {tourStep !== null && (
+          <>
+            {/* Backdrop overlay */}
+            <div 
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] z-40 transition-opacity duration-300"
+              onClick={handleCompleteTour}
+            />
+            
+            {/* Onboarding Dialog */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-white border border-slate-200/80 shadow-2xl rounded-2xl p-6 z-50 transition-all duration-300 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[var(--brand-pink)] uppercase tracking-wider">
+                  Dashboard Tour · Step {tourStep + 1} of {TOUR_STEPS.length}
+                </span>
+                <button 
+                  onClick={handleCompleteTour}
+                  className="text-slate-400 hover:text-slate-600 text-sm font-semibold transition-colors cursor-pointer"
+                >
+                  Skip Tour
+                </button>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">
+                  {TOUR_STEPS[tourStep].title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  {TOUR_STEPS[tourStep].description}
+                </p>
+              </div>
+              
+              <div className="rounded-xl bg-[#fcf8ff] border border-[#f3e8ff] p-3 text-left">
+                <p className="text-xs font-bold text-[#6b21a8] flex items-center gap-1.5">
+                  <span>✨</span> Did you know?
+                </p>
+                <p className="mt-1 text-xs text-[#7e22ce] leading-relaxed">
+                  {TOUR_STEPS[tourStep].funFact}
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <div className="flex gap-1">
+                  {TOUR_STEPS.map((_, i) => (
+                    <span 
+                      key={i} 
+                      className={cn(
+                        "size-2 rounded-full transition-all",
+                        i === tourStep ? "bg-[var(--brand-pink)] w-4" : "bg-slate-200"
+                      )}
+                    />
+                  ))}
+                </div>
+                
+                <div className="flex gap-2">
+                  {tourStep > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handlePrevStep}
+                      className="border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold"
+                    >
+                      Back
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    onClick={handleNextStep}
+                    className="bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-magenta)] font-semibold"
+                  >
+                    {tourStep === TOUR_STEPS.length - 1 ? "Finish" : "Next"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
     </div>
   );
 }
