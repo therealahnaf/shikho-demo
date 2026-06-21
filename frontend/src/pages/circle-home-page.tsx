@@ -5,6 +5,7 @@ import {
   Clock3,
   Crown,
   Flame,
+  Info,
   LockKeyhole,
   LibraryBig,
   Map,
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCaption, TableCell, TableRow } from "@/components/ui/table";
@@ -93,6 +95,48 @@ function CardLabel({ icon: Icon, children }: { icon: React.ElementType; children
   );
 }
 
+interface InfoHoverCardProps {
+  title: string;
+  description: string;
+  funFact?: string;
+}
+
+function InfoHoverCard({ title, description, funFact }: InfoHoverCardProps) {
+  return (
+    <HoverCard openDelay={150} closeDelay={150}>
+      <HoverCardTrigger asChild>
+        <button
+          type="button"
+          className="ml-1 inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/60 hover:text-[var(--brand-blue)] hover:bg-[#eef3ff] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand-blue)] cursor-pointer"
+          aria-label={`Information about ${title}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Info className="size-3" />
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent
+        className="w-80 p-4 border border-slate-100 bg-white/95 backdrop-blur-md shadow-lg rounded-xl z-50 text-left animate-in fade-in-0 zoom-in-95 duration-150"
+        side="top"
+        align="start"
+      >
+        <div className="space-y-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--brand-blue)]">{title}</h4>
+          <p className="text-sm text-[var(--brand-dark-blue)] leading-relaxed font-normal">{description}</p>
+          {funFact && (
+            <div className="mt-3 rounded-lg bg-[#fcf8ff] border border-[#f3e8ff] p-2.5">
+              <p className="text-xs font-semibold text-[#6b21a8] flex items-center gap-1">
+                <span>✨</span> Fun Fact
+              </p>
+              <p className="mt-1 text-[11px] text-[#7e22ce] leading-normal font-normal">{funFact}</p>
+            </div>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+
 export function CircleHomePage() {
   const { circleId = "" } = useParams();
   const navigate = useNavigate();
@@ -149,7 +193,14 @@ export function CircleHomePage() {
           <Card className="border-0 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <div className="flex items-center justify-between gap-3">
-                <CardLabel icon={Target}>Monthly Circle Mission</CardLabel>
+                <CardLabel icon={Target}>
+                  Monthly Circle Mission
+                  <InfoHoverCard
+                    title="Monthly Mission"
+                    description="Collaborate with your 10 circle members to complete this major goal. Every single action counts towards your team points!"
+                    funFact="Circles completing monthly missions gain a massive boost in the Subject leaderboards."
+                  />
+                </CardLabel>
                 <Badge variant="secondary" className="bg-[#eef3ff] text-[var(--brand-dark-blue)]">Ends {endDate}</Badge>
               </div>
               <CardTitle className="pt-1 text-sm font-medium leading-5">{data.mission.title}</CardTitle>
@@ -167,7 +218,14 @@ export function CircleHomePage() {
           <Card className="border-0 shadow-sm">
             <CardHeader className="p-4 pb-2">
               <div className="flex items-center justify-between gap-3">
-                <CardLabel icon={Zap}>Daily Circle Quest</CardLabel>
+                <CardLabel icon={Zap}>
+                  Daily Circle Quest
+                  <InfoHoverCard
+                    title="Daily Quest"
+                    description="A quick-fire goal for the entire circle that resets at midnight. Work together to finish it in time!"
+                    funFact="Consistency is key: completing daily quests boosts your individual points by 15%!"
+                  />
+                </CardLabel>
                 <Badge className="bg-[var(--brand-yellow)] text-[#3d2a00] hover:bg-[var(--brand-yellow)]">
                   <Clock3 className="mr-1 size-3" /> {formatTimeRemaining(data.daily_quest.time_remaining_seconds)} left
                 </Badge>
@@ -186,7 +244,14 @@ export function CircleHomePage() {
 
           <Card className="border-0 shadow-sm lg:col-span-2 xl:col-span-1">
             <CardContent className="flex h-full min-h-40 flex-col items-center justify-center p-4 text-center">
-              <CardLabel icon={Flame}>Circle Streak</CardLabel>
+              <CardLabel icon={Flame}>
+                Circle Streak
+                <InfoHoverCard
+                  title="Circle Streak"
+                  description="Keep the fire burning! At least one member of your circle must complete an activity every day to keep the streak alive. If it hits 0, the circle dies."
+                  funFact="A dead circle cannot be revived. Work together to keep your community alive!"
+                />
+              </CardLabel>
               <Flame className="mt-3 size-7 text-[var(--brand-yellow)]" />
               <p className="mt-1 text-3xl font-black text-[var(--brand-dark-blue)]">{data.streak.days}</p>
               <p className="text-xs font-semibold text-muted-foreground">days together</p>
@@ -198,7 +263,14 @@ export function CircleHomePage() {
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
               <div>
-                <CardLabel icon={Map}>Weekly Roadmap</CardLabel>
+                <CardLabel icon={Map}>
+                  Weekly Roadmap
+                  <InfoHoverCard
+                    title="Weekly Roadmap"
+                    description="Your weekly study guide based on the syllabus. This is selected by the weekly Mentor to keep everyone focused."
+                    funFact="Completing roadmap milestones helps your circle progress faster."
+                  />
+                </CardLabel>
                 <CardTitle className="mt-2 text-sm">{data.roadmap.title}</CardTitle>
               </div>
               <Button asChild size="sm">
@@ -245,7 +317,14 @@ export function CircleHomePage() {
 
           <Card className="border-0 shadow-sm">
             <CardContent className="flex h-full min-h-52 flex-col items-center justify-center p-4 text-center">
-              <CardLabel icon={Crown}>Mentor of the Week</CardLabel>
+              <CardLabel icon={Crown}>
+                Mentor of the Week
+                <InfoHoverCard
+                  title="Weekly Mentor"
+                  description="The student placing 1st in the leaderboard last week becomes the Mentor. They hold the power to choose the next roadmap!"
+                  funFact="With great power comes great responsibility. Lead your circle to victory!"
+                />
+              </CardLabel>
               <Avatar className="mt-4 size-14 border-2 border-[var(--brand-yellow)]">
                 <AvatarFallback className="bg-[var(--brand-dark-blue)] text-base font-bold text-white">
                   {data.mentor ? initials(data.mentor.display_name) : "—"}
@@ -261,7 +340,14 @@ export function CircleHomePage() {
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
           <Card className="overflow-hidden border-0 shadow-sm">
             <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
-              <CardLabel icon={Trophy}>Leaderboard · This Week</CardLabel>
+              <CardLabel icon={Trophy}>
+                Leaderboard · This Week
+                <InfoHoverCard
+                  title="Weekly Standings"
+                  description="Check out the friendly competition inside your circle. The top student at the end of the week becomes next week's Mentor!"
+                  funFact="Points are earned from daily quests, monthly missions, and roadmap progress."
+                />
+              </CardLabel>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="bg-[#eef3ff] text-[var(--brand-dark-blue)]">Your rank #{data.leaderboard.current_user_rank}</Badge>
                 <Button asChild size="sm" variant="outline"><Link to={`/app/study-circle/${circleId}/leaderboard`}>View full leaderboard</Link></Button>
@@ -297,7 +383,14 @@ export function CircleHomePage() {
 
           <Card className="overflow-hidden border-0 shadow-sm">
             <CardHeader className="p-4 pb-2">
-              <CardLabel icon={Sparkles}>Recent Activity</CardLabel>
+              <CardLabel icon={Sparkles}>
+                Recent Activity
+                <InfoHoverCard
+                  title="Circle Activity"
+                  description="A live feed showing the latest study contributions, note uploads, and completions from your circle members."
+                  funFact="Support your peers! Head over to the Circle Store to upvote helpful notes."
+                />
+              </CardLabel>
             </CardHeader>
             <CardContent className="p-0">
               {data.activity_feed.length ? data.activity_feed.map((event, index) => (
