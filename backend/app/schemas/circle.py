@@ -277,3 +277,7 @@ class LeaveCircleResponse(BaseModel):
     message: str
 
 
+class CircleMembersResponse(BaseModel):
+    members: list[MemberUser]
+
+

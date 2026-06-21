@@ -150,6 +150,10 @@ export function CircleHomePage() {
   const { circleId = "" } = useParams();
   const navigate = useNavigate();
   const user = useAppUser();
+  const queryClient = useQueryClient();
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+
   const homeQuery = useQuery({
     queryKey: ["circle-home", circleId],
     queryFn: () => api.getCircleHome(circleId),
@@ -169,9 +173,6 @@ export function CircleHomePage() {
   }
 
   const data = homeQuery.data;
-  const queryClient = useQueryClient();
-  const [isLeaveOpen, setIsLeaveOpen] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
 
   const handleLeave = async () => {
     setIsLeaving(true);
@@ -199,7 +200,7 @@ export function CircleHomePage() {
           <Breadcrumb>
             <BreadcrumbList className="text-xs">
               <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/app">StudyCircle</Link></BreadcrumbLink>
+                <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem><BreadcrumbPage>{data.circle.name}</BreadcrumbPage></BreadcrumbItem>
@@ -211,6 +212,11 @@ export function CircleHomePage() {
               <p className="mt-1 text-sm text-muted-foreground">Let&apos;s learn and win together.</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]">
+                <Link to="/app/study-circle/lobby">
+                  <UsersRound className="size-4" /> Circle Lobby
+                </Link>
+              </Button>
               <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]"><Link to={`/app/study-circle/${circleId}/store`}><LibraryBig className="size-4" /> Circle Store</Link></Button>
               <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-white" onClick={() => setIsLeaveOpen(true)}>
                 Leave Circle
@@ -305,9 +311,20 @@ export function CircleHomePage() {
                 </CardLabel>
                 <CardTitle className="mt-2 text-sm">{data.roadmap.title}</CardTitle>
               </div>
-              <Button asChild size="sm">
-                <Link to={`/app/study-circle/${circleId}/roadmap`}><BookOpenCheck /> Continue Roadmap</Link>
-              </Button>
+              {data.cycle_status === "finalized" ? (
+                <div className="flex flex-col items-end gap-1.5">
+                  <Button size="sm" disabled className="disabled:opacity-50">
+                    <BookOpenCheck /> Continue Roadmap
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    Roadmap activities are not available yet.
+                  </span>
+                </div>
+              ) : (
+                <Button asChild size="sm">
+                  <Link to={`/app/study-circle/${circleId}/roadmap`}><BookOpenCheck /> Continue Roadmap</Link>
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="p-4 pt-3">
               <div className="overflow-x-auto pb-2">

@@ -119,8 +119,8 @@ async def test_seed_is_idempotent() -> None:
     first = await seed_phase_one()
     second = await seed_phase_one()
     assert first == second == {
-        "circles": 4,
-        "fixture_users": 10,
+        "circles": 200,
+        "fixture_users": 206,
         "memberships": 5,
         "checkpoints": 5,
         "activity_events": 8,
@@ -200,4 +200,26 @@ async def test_leave_circle(client: AsyncClient, db_session: AsyncSession) -> No
     # Verify no longer a member
     membership = await client.get("/api/v1/me/circle-membership", headers=headers)
     assert membership.json() == {"membership": None}
+
+
+@pytest.mark.asyncio
+async def test_get_circle_members(client: AsyncClient, db_session: AsyncSession) -> None:
+    _created, headers = await create_student(client)
+
+    # Fetch members of CIRCLE_ID (should succeed since user matches class_level / preferred_subject)
+    res = await client.get(f"/api/v1/circles/{CIRCLE_ID}/members", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "members" in data
+    assert len(data["members"]) > 0
+    for member in data["members"]:
+        assert "display_name" in member
+        assert "username" in member
+
+    # Fetch members of non-existent circle
+    random_id = "00000000-0000-0000-0000-000000000000"
+    res_fail = await client.get(f"/api/v1/circles/{random_id}/members", headers=headers)
+    assert res_fail.status_code == 404
+    assert res_fail.json()["code"] == "circle_not_found"
+
 

@@ -65,7 +65,13 @@ export function RoadmapPage() {
     <div className="w-full space-y-4">
         <Breadcrumb>
           <BreadcrumbList className="text-xs">
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>StudyCircle</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{data.circle.name}</Link></BreadcrumbLink>
+            </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem><BreadcrumbPage>Roadmap</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>

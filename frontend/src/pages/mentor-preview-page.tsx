@@ -1,5 +1,7 @@
 import { Award, Check, Crown, ArrowLeft, BookOpen, Map } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -61,13 +63,25 @@ export function MentorPreviewPage() {
 
   const selectedNote = data.workspace?.notes.find((n: any) => n.id === data.mentor_pick_note_id);
 
+  const { data: membershipData } = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
+  });
+  const circleName = membershipData?.membership?.circle_name || "My Circle";
+
   return (
     <div className="w-full space-y-4">
       <Breadcrumb>
         <BreadcrumbList className="text-xs">
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to={`/app/study-circle/${circleId}`}>Dashboard</Link>
+              <Link to="/app/study-circle/lobby">StudyCircle</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to={`/app/study-circle/${circleId}`}>{circleName}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

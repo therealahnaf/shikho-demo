@@ -377,6 +377,13 @@ export const api = {
       true,
     );
   },
+  getCircleMembers(circleId: string) {
+    return request<{ members: MemberUser[] }>(
+      `/api/v1/circles/${circleId}/members`,
+      {},
+      true,
+    );
+  },
 };
 
 export type MentorTerm = {

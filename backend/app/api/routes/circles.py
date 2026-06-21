@@ -22,6 +22,7 @@ from app.schemas.circle import (
     CircleLeaderboardResponse,
     CreateCircleRequest,
     LeaveCircleResponse,
+    CircleMembersResponse,
 )
 from app.services.circles import (
     circle_home,
@@ -213,5 +214,17 @@ async def api_leave_circle(
     from app.schemas.circle import LeaveCircleResponse
     from app.services.circles import leave_circle
     return await leave_circle(session, current_user, circle_id)
+
+
+@router.get("/circles/{circle_id}/members", response_model=CircleMembersResponse)
+async def read_circle_members(
+    circle_id: UUID,
+    current_user: DemoUser = Depends(get_current_demo_user),
+    session: AsyncSession = Depends(get_db),
+) -> CircleMembersResponse:
+    from app.schemas.circle import CircleMembersResponse
+    from app.services.circles import get_circle_members
+    return await get_circle_members(session, current_user, circle_id)
+
 
 

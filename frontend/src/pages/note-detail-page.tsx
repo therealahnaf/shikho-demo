@@ -32,13 +32,35 @@ export function NoteDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["circle-notes", circleId] });
     },
   });
+  const { data: membershipData } = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
+  });
+  const circleName = membershipData?.membership?.circle_name || "My Circle";
+
   if (noteQuery.isPending) return <AppPageLoading />;
   if (noteQuery.isError) return <AppPageError onRetry={() => void noteQuery.refetch()} />;
   const note = noteQuery.data;
 
   return (
     <div className="w-full space-y-4">
-      <Breadcrumb><BreadcrumbList className="text-xs"><BreadcrumbItem><BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/store`}>Circle Store</Link></BreadcrumbLink></BreadcrumbItem><BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage>Note</BreadcrumbPage></BreadcrumbItem></BreadcrumbList></Breadcrumb>
+      <Breadcrumb>
+        <BreadcrumbList className="text-xs">
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{circleName}</Link></BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/store`}>Circle Store</Link></BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>Note</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       {created ? <Alert className="border-0 bg-[#eef3ff]"><Medal className="text-[var(--brand-blue)]" /><AlertTitle>Note shared · +{created.points_added} points</AlertTitle><AlertDescription>{created.current_rank < created.previous_rank ? `You moved from rank #${created.previous_rank} to #${created.current_rank}.` : `You remain at rank #${created.current_rank}.`}</AlertDescription></Alert> : null}
       <Card className="border-0 shadow-sm"><CardContent className="p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">

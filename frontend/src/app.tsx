@@ -20,6 +20,7 @@ import { NewNotePage } from "@/pages/new-note-page";
 import { NoteDetailPage } from "@/pages/note-detail-page";
 import { MentorWorkspacePage } from "@/pages/mentor-workspace-page";
 import { MentorPreviewPage } from "@/pages/mentor-preview-page";
+import { ExploreCirclesPage } from "@/pages/explore-circles-page";
 
 export function AppRoutes() {
   return (
@@ -38,6 +39,7 @@ export function AppRoutes() {
         <Route path="/app/home" element={<HomePage />} />
         <Route path="/app/study-circle/intro" element={<StudyCircleIntroPage />} />
         <Route path="/app/study-circle/lobby" element={<LobbyPage />} />
+        <Route path="/app/study-circle/explore" element={<ExploreCirclesPage />} />
         <Route path="/app/study-circle/recommended" element={<RecommendedCirclePage />} />
         <Route path="/app/study-circle/joined" element={<JoinedCirclePage />} />
         <Route path="/app/study-circle/:circleId/roadmap" element={<RoadmapPage />} />

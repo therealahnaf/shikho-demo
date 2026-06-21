@@ -20,6 +20,7 @@ import {
 
 import { api, ApiError, CircleLeaderboardEntry } from "@/lib/api";
 import { useAppUser } from "@/components/app-layout";
+import { cn } from "@/lib/utils";
 
 const BUBBLE_COLORS = [
   "#6366F1", // Indigo
@@ -45,11 +46,12 @@ export function LobbyPage() {
     queryFn: api.getCircles,
   });
 
-  // Recommended Circle State
-  const { data: recData, isLoading: recLoading } = useQuery({
-    queryKey: ["recommendedCircle"],
-    queryFn: api.getRecommendedCircle,
+  // Membership State
+  const { data: membershipData, isLoading: membershipLoading } = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
   });
+  const membership = membershipData?.membership;
 
   // Dialog States
   const [selectedCircle, setSelectedCircle] = useState<CircleLeaderboardEntry | null>(null);
@@ -94,7 +96,7 @@ export function LobbyPage() {
     }
   };
 
-  if (circlesLoading || recLoading) {
+  if (circlesLoading || membershipLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <div className="text-center">
@@ -106,31 +108,111 @@ export function LobbyPage() {
   }
 
   const circles = circlesData?.circles ?? [];
-  const recommendedCircle = recData?.data;
 
-  // Constellation placement logic
-  const centerX = 400;
-  const centerY = 250;
-  const positions = circles.map((circle, index) => {
-    const presetPositions = [
-      { x: 220, y: 220 }, // Math Champions
-      { x: 450, y: 150 }, // Pi Squad
-      { x: 430, y: 350 }, // Equation Elites
-      { x: 620, y: 240 }, // Trigonometry Titans
-    ];
-    if (index < presetPositions.length) {
-      return { ...circle, ...presetPositions[index], r: index === 0 ? 90 : index === 1 ? 75 : index === 2 ? 65 : 55 };
+  // Clustered Constellation Leaderboard Placement Logic
+  const displayCircles = circles.slice(0, 35);
+  
+  const positions = displayCircles.map((circle, index) => {
+    // Deterministic placement for clustered network
+    if (index === 0) {
+      return { ...circle, x: 330, y: 170, r: 42, color: "#4F46E5", cluster: 0 }; // Indigo
     }
-    const i = index - presetPositions.length + 1;
-    const angle = i * 2.4;
-    const dist = 280 + i * 60;
+    if (index === 1) {
+      return { ...circle, x: 470, y: 200, r: 42, color: "#0EA5E9", cluster: 0 }; // Sky Blue
+    }
+    if (index === 2) {
+      return { ...circle, x: 400, y: 275, r: 42, color: "#10B981", cluster: 0 }; // Emerald
+    }
+    
+    // Distribute into 3 clusters
+    const clusterId = (index % 3) + 1;
+    const clusterIndex = Math.floor((index - 3) / 3); // 0, 1, 2, ...
+    
+    let cx = 0, cy = 0;
+    let color = "";
+    let innerOffset = 0;
+    let outerOffset = 0;
+    
+    if (clusterId === 1) {
+      // Cluster 1: Purple (Left side)
+      cx = 160;
+      cy = 210;
+      color = index % 2 === 0 ? "#8B5CF6" : "#A78BFA";
+      innerOffset = 0;
+      outerOffset = 0;
+    } else if (clusterId === 2) {
+      // Cluster 2: Blue (Right side)
+      cx = 640;
+      cy = 210;
+      color = index % 2 === 0 ? "#2563EB" : "#60A5FA";
+      innerOffset = 0;
+      outerOffset = 0;
+    } else {
+      // Cluster 3: Pink/Cyan (Bottom/Center)
+      cx = 400;
+      cy = 380;
+      color = index % 2 === 0 ? "#EC4899" : "#06B6D4";
+      innerOffset = Math.PI / 4; // rotate to avoid straight up overlap
+      outerOffset = Math.PI / 6;
+    }
+    
+    let angle = 0;
+    let dist = 0;
+    let r = 18;
+    
+    if (clusterIndex < 4) {
+      // Inner ring (4 nodes)
+      angle = (clusterIndex * Math.PI) / 2 + innerOffset;
+      dist = 52;
+      r = 20;
+    } else {
+      // Outer ring (remaining nodes)
+      const outerIndex = clusterIndex - 4;
+      angle = (outerIndex * Math.PI) / 3.5 + outerOffset;
+      dist = 92;
+      r = 16;
+    }
+    
+    const x = cx + Math.cos(angle) * dist;
+    const y = cy + Math.sin(angle) * dist;
+    
     return {
       ...circle,
-      x: centerX + Math.cos(angle) * dist,
-      y: centerY + Math.sin(angle) * dist,
-      r: 50,
+      x,
+      y,
+      r,
+      color,
+      cluster: clusterId,
     };
   });
+
+  const connections: Array<{ from: number; to: number }> = [];
+  if (positions.length > 0) {
+    // 1. Connect central nodes
+    if (positions.length > 1) connections.push({ from: 0, to: 1 });
+    if (positions.length > 2) {
+      connections.push({ from: 0, to: 2 });
+      connections.push({ from: 1, to: 2 });
+    }
+    
+    // 2. Connect clusters to central nodes
+    if (positions.length > 3) connections.push({ from: 0, to: 3 });
+    if (positions.length > 4) connections.push({ from: 1, to: 4 });
+    if (positions.length > 5) connections.push({ from: 2, to: 5 });
+    
+    // 3. Connect nodes within clusters
+    for (let i = 3; i < positions.length; i++) {
+      if (i + 3 < positions.length) {
+        connections.push({ from: i, to: i + 3 });
+      }
+      if (i + 6 < positions.length && i % 2 === 0) {
+        connections.push({ from: i, to: i + 6 });
+      }
+    }
+  }
+
+  // Hover state
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_2fr] lg:items-start max-w-7xl mx-auto">
@@ -145,48 +227,58 @@ export function LobbyPage() {
               Welcome, {user.display_name}!
             </CardTitle>
             <CardDescription className="text-slate-500 mt-1">
-              You are not in a StudyCircle yet. Choose one from the leaderboard constellation or start your own.
+              {membership ? (
+                `You are a member of ${membership.circle_name}. You can explore other circles or return to your dashboard.`
+              ) : (
+                "You are not in a StudyCircle yet. Choose one from the leaderboard constellation or start your own."
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button
-              onClick={() => setIsCreateOpen(true)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" /> Create a Circle
-            </Button>
+            {membership ? (
+              <Button
+                onClick={() => navigate(`/app/study-circle/${membership.circle_id}`)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11"
+              >
+                Go to My Circle
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setIsCreateOpen(true)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" /> Create a Circle
+              </Button>
+            )}
           </CardContent>
         </Card>
 
-        {/* Recommended Circle Card */}
-        {recommendedCircle && (
-          <Card className="border-indigo-100 shadow-sm bg-indigo-50 text-indigo-950">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2 text-indigo-700">
-                <Sparkles className="h-4 w-4 fill-indigo-700" />
-                <span className="text-xs font-bold uppercase tracking-wider">Recommended Circle</span>
-              </div>
-              <CardTitle className="text-xl font-extrabold tracking-tight mt-1 text-indigo-950">
-                {recommendedCircle.name}
-              </CardTitle>
-              <CardDescription className="text-indigo-800/80">
-                {recommendedCircle.member_count}/10 members · Class 10
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm leading-relaxed text-indigo-900">
-                "{recommendedCircle.description}"
-              </p>
-              <Button
-                onClick={() => handleJoinCircle(recommendedCircle.id)}
-                disabled={isJoining}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10"
-              >
-                {isJoining ? "Joining..." : "Join Recommended Circle"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {/* Explore Circles Card */}
+        <Card className="border-indigo-100 shadow-sm bg-indigo-50 text-indigo-950">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-indigo-700">
+              <Sparkles className="h-4 w-4 fill-indigo-700" />
+              <span className="text-xs font-bold uppercase tracking-wider">Discover Cohorts</span>
+            </div>
+            <CardTitle className="text-xl font-extrabold tracking-tight mt-1 text-indigo-950">
+              Explore Study Circles
+            </CardTitle>
+            <CardDescription className="text-indigo-800/80">
+              Find and join existing study circles in Class 10 Mathematics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-relaxed text-indigo-900">
+              Browse the list of all available circles, check their active members, see points leaderboards, and find the perfect team to study with.
+            </p>
+            <Button
+              onClick={() => navigate("/app/study-circle/explore")}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10"
+            >
+              Explore Circles
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Interactive Constellation Leaderboard */}
@@ -198,72 +290,111 @@ export function LobbyPage() {
           </div>
         </div>
 
-        <Card className="border-slate-800 overflow-hidden bg-[#0B132B] shadow-2xl">
+        <Card className="border-slate-200 overflow-hidden bg-slate-50/50 shadow-sm relative">
           <div className="relative w-full aspect-[8/5] min-h-[350px]">
             {circles.length === 0 ? (
               <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm font-semibold">
                 No StudyCircles found. Create the first one!
               </div>
             ) : (
-              <svg
-                viewBox="0 0 800 500"
-                className="w-full h-full select-none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* Constellation Connection Lines */}
-                {positions.map((node, i) => {
-                  if (positions.length < 2) return null;
-                  const nextNode = positions[(i + 1) % positions.length];
-                  return (
-                    <line
-                      key={`line-${i}`}
-                      x1={node.x}
-                      y1={node.y}
-                      x2={nextNode.x}
-                      y2={nextNode.y}
-                      className="stroke-indigo-900/50 stroke-[3]"
-                      strokeDasharray="6 6"
-                    />
-                  );
-                })}
-
-                {/* Interactive Circle Bubbles */}
-                {positions.map((node, index) => {
-                  const color = BUBBLE_COLORS[index % BUBBLE_COLORS.length];
-                  return (
-                    <g
-                      key={node.id}
-                      className="transition-transform duration-300 hover:scale-[1.05] cursor-pointer origin-center"
-                      style={{
-                        transformBox: "fill-box",
-                        transformOrigin: "center",
-                      }}
-                      onClick={() => setSelectedCircle(node)}
-                    >
-                      <circle
-                        cx={node.x}
-                        cy={node.y}
-                        r={node.r}
-                        fill={color}
-                        className="stroke-[#0B132B] stroke-[4]"
+              <>
+                <svg
+                  viewBox="0 0 800 500"
+                  className="w-full h-full select-none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Constellation Connection Lines */}
+                  {connections.map((conn, idx) => {
+                    const fromNode = positions[conn.from];
+                    const toNode = positions[conn.to];
+                    if (!fromNode || !toNode) return null;
+                    
+                    const isHighlighted = hoveredNode === conn.from || hoveredNode === conn.to;
+                    return (
+                      <line
+                        key={`link-${idx}`}
+                        x1={fromNode.x}
+                        y1={fromNode.y}
+                        x2={toNode.x}
+                        y2={toNode.y}
+                        className={cn(
+                          "transition-all duration-300",
+                          isHighlighted ? "stroke-indigo-500 stroke-[2]" : "stroke-slate-200/80 stroke-[1.5]"
+                        )}
                       />
-                      <text
-                        x={node.x}
-                        y={node.y}
-                        textAnchor="middle"
-                        className="fill-white font-bold select-none pointer-events-none"
+                    );
+                  })}
+
+                  {/* Interactive Circle Bubbles */}
+                  {positions.map((node, index) => {
+                    const isHovered = hoveredNode === index;
+                    return (
+                      <g
+                        key={node.id}
+                        className="transition-transform duration-300 hover:scale-[1.08] cursor-pointer origin-center"
+                        style={{
+                          transformBox: "fill-box",
+                          transformOrigin: "center",
+                        }}
+                        onMouseEnter={() => setHoveredNode(index)}
+                        onMouseLeave={() => setHoveredNode(null)}
+                        onClick={() => setSelectedCircle(node)}
                       >
-                        <tspan x={node.x} dy="-0.4em" className="text-sm font-black tracking-tight">
-                          {truncate(node.name, 12)}
-                        </tspan>
-                        <tspan x={node.x} dy="1.3em" className="text-xs font-semibold fill-slate-100">
-                          {node.points} pts
-                        </tspan>
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+                        <circle
+                          cx={node.x}
+                          cy={node.y}
+                          r={node.r}
+                          fill={node.color}
+                          className="stroke-white stroke-[3] transition-all duration-300"
+                        />
+                        
+                        {/* Display text inside circles only if they are medium/large */}
+                        {node.r >= 32 ? (
+                          <text
+                            x={node.x}
+                            y={node.y}
+                            textAnchor="middle"
+                            className="fill-white font-bold select-none pointer-events-none text-center"
+                          >
+                            <tspan x={node.x} dy="-0.3em" className="text-[10px] font-black tracking-tight">
+                              {truncate(node.name, 10)}
+                            </tspan>
+                            <tspan x={node.x} dy="1.2em" className="text-[9px] font-bold fill-slate-100">
+                              {node.points} pts
+                            </tspan>
+                          </text>
+                        ) : (
+                          // For small circles, show their rank
+                          <text
+                            x={node.x}
+                            y={node.y + 3.5}
+                            textAnchor="middle"
+                            className="fill-white font-black text-[9px] select-none pointer-events-none"
+                          >
+                            {index + 1}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* Floating Tooltip */}
+                {hoveredNode !== null && positions[hoveredNode] && (
+                  <div
+                    className="absolute bg-slate-900 text-white text-xs rounded-lg py-1.5 px-3 pointer-events-none shadow-md z-10 -translate-x-1/2 -translate-y-full flex flex-col gap-0.5 border border-slate-800 transition-all duration-200"
+                    style={{
+                      left: `${positions[hoveredNode].x}px`,
+                      top: `${positions[hoveredNode].y - positions[hoveredNode].r - 6}px`,
+                    }}
+                  >
+                    <span className="font-bold text-slate-100">{positions[hoveredNode].name}</span>
+                    <span className="text-[10px] text-indigo-300 font-semibold">
+                      Rank #{hoveredNode + 1} · {positions[hoveredNode].points} pts · {positions[hoveredNode].member_count}/10 members
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </Card>
@@ -302,10 +433,10 @@ export function LobbyPage() {
               </Button>
               <Button
                 onClick={() => handleJoinCircle(selectedCircle.id)}
-                disabled={isJoining || selectedCircle.member_count >= 10}
+                disabled={isJoining || selectedCircle.member_count >= 10 || !!membership}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
               >
-                {isJoining ? "Joining..." : selectedCircle.member_count >= 10 ? "Circle Full" : "Confirm Join"}
+                {isJoining ? "Joining..." : selectedCircle.member_count >= 10 ? "Circle Full" : membership ? "Already in a Circle" : "Confirm Join"}
               </Button>
             </DialogFooter>
           </DialogContent>

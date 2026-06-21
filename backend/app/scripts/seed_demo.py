@@ -384,6 +384,56 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
             tri_members
         )
 
+        # Seed 196 additional circles to make 200 total
+        chars = "ABCDEFGHJKMNPQRSTVWXYZ23456789"
+        circle_names = [
+            "Math Wizards", "Sigma Solvers", "Calculus Crew", "Infinity Loop", "Vector Vanguard",
+            "Theorem Team", "Prime Alliance", "Matrix Mavericks", "Fraction Force", "Logarithm Legion",
+            "Ratio Rangers", "Delta Division", "Binary Battalion", "Decimal Dynasty", "Equation Experts"
+        ]
+        circle_adjectives = [
+            "Smart", "Elite", "Pro", "Active", "Daily", "Dedicated", "Passionate", "Creative", "Clever"
+        ]
+
+        for i in range(1, 197):
+            idx = 100 + i
+            c_name = f"{circle_adjectives[i % len(circle_adjectives)]} {circle_names[i % len(circle_names)]} {i}"
+            c_desc = f"Collaboration circle {idx} focusing on master class material and exam prep."
+            c_id = UUID(f"20000000-0000-0000-0000-{idx:012d}")
+            
+            # Deterministic unique access key
+            p1 = chars[(idx) % len(chars)]
+            p2 = chars[(idx // len(chars)) % len(chars)]
+            p3 = chars[(idx // (len(chars)**2)) % len(chars)]
+            p4 = chars[(idx // (len(chars)**3)) % len(chars)]
+            p5 = chars[(idx * 7) % len(chars)]
+            p6 = chars[(idx * 13) % len(chars)]
+            p7 = chars[(idx * 17) % len(chars)]
+            p8 = chars[(idx * 23) % len(chars)]
+            access_key = f"SC-{p1}{p2}{p3}{p4}-{p5}{p6}{p7}{p8}"
+            
+            c_members = [{
+                "id": UUID(f"10000000-0000-0000-0000-{idx:012d}"),
+                "membership_id": UUID(f"30000000-0000-0000-0000-{idx:012d}"),
+                "username": f"user_{idx}_fixture",
+                "display_name": f"Student {idx}",
+                "access_key": access_key,
+                "weekly_points": (idx * 3) % 250 + 10,
+                "roadmap_position": idx % 5,
+                "personal_contribution": idx % 8 + 1,
+            }]
+            
+            await seed_circle_helper(
+                session, now, periods,
+                c_id,
+                c_name,
+                c_desc,
+                (idx % 6) + 1,
+                (idx * 2) % 40 + 5,
+                idx % 4,
+                c_members
+            )
+
         # Seed Activity Events for Math Champions (retains original tests compatibility)
         seeded_events = [
             ActivityEvent(

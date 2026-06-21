@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileImage, FileText, ImagePlus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -70,10 +70,32 @@ export function NewNotePage() {
     setImage(file);
   }
 
+  const { data: membershipData } = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
+  });
+  const circleName = membershipData?.membership?.circle_name || "My Circle";
+
   const serverError = mutation.error instanceof ApiError ? mutation.error.message : mutation.error?.message;
   return (
     <div className="w-full space-y-4">
-      <Breadcrumb><BreadcrumbList className="text-xs"><BreadcrumbItem><BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/store`}>Circle Store</Link></BreadcrumbLink></BreadcrumbItem><BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage>Add note</BreadcrumbPage></BreadcrumbItem></BreadcrumbList></Breadcrumb>
+      <Breadcrumb>
+        <BreadcrumbList className="text-xs">
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{circleName}</Link></BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/store`}>Circle Store</Link></BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>Add note</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <div><h1 className="text-2xl font-bold">Share a note</h1><p className="mt-1 text-sm text-muted-foreground">Useful study material earns 10 weekly points.</p></div>
       <Card className="max-w-3xl border-0 shadow-sm"><CardHeader><CardTitle className="text-base text-[var(--brand-dark-blue)]">Note details</CardTitle></CardHeader><CardContent>
         <Form {...form}><form className="space-y-5" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>

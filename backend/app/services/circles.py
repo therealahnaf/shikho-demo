@@ -1057,4 +1057,36 @@ async def leave_circle(
     return {"success": True, "message": "Successfully left the StudyCircle."}
 
 
+async def get_circle_members(
+    session: AsyncSession, user: DemoUser, circle_id: uuid.UUID
+) -> CircleMembersResponse:
+    from app.schemas.circle import CircleMembersResponse, MemberUser
+    from app.models import Circle, CircleMembership, DemoUser
+
+    circle = await session.get(Circle, circle_id)
+    if circle is None:
+        raise AppError(status_code=404, code="circle_not_found", message="StudyCircle not found.")
+
+    if circle.class_level != user.class_level or circle.subject != user.preferred_subject:
+        raise AppError(
+            status_code=403,
+            code="circle_not_accessible",
+            message="Cannot view members of a StudyCircle outside your class and subject.",
+        )
+
+    rows = (
+        await session.execute(
+            select(DemoUser)
+            .join(CircleMembership, DemoUser.id == CircleMembership.user_id)
+            .where(CircleMembership.circle_id == circle_id)
+            .order_by(CircleMembership.joined_at)
+        )
+    ).scalars().all()
+
+    return CircleMembersResponse(
+        members=[MemberUser(id=u.id, username=u.username, display_name=u.display_name) for u in rows]
+    )
+
+
+
 

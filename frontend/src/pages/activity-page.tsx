@@ -155,7 +155,23 @@ export function ActivityPage() {
 
   return (
     <div className="w-full space-y-4">
-        <Breadcrumb><BreadcrumbList className="text-xs"><BreadcrumbItem><BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/roadmap`}>Roadmap</Link></BreadcrumbLink></BreadcrumbItem><BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage>{checkpoint.title}</BreadcrumbPage></BreadcrumbItem></BreadcrumbList></Breadcrumb>
+        <Breadcrumb>
+          <BreadcrumbList className="text-xs">
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{roadmapQuery.data.circle.name}</Link></BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/roadmap`}>Roadmap</Link></BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>{checkpoint.title}</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         {result ? <CompletionSummary result={result} circleId={circleId} /> : (
           <Card className="border-0 shadow-sm">
             <CardHeader className="p-5">

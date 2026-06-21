@@ -137,13 +137,25 @@ export function MentorWorkspacePage() {
 
   const serverError = mutation.error instanceof ApiError ? mutation.error.message : mutation.error?.message;
 
+  const { data: membershipData } = useQuery({
+    queryKey: ["membership"],
+    queryFn: api.getMembership,
+  });
+  const circleName = membershipData?.membership?.circle_name || "My Circle";
+
   return (
     <div className="w-full space-y-4">
       <Breadcrumb>
         <BreadcrumbList className="text-xs">
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to={`/app/study-circle/${circleId}`}>Dashboard</Link>
+              <Link to="/app/study-circle/lobby">StudyCircle</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to={`/app/study-circle/${circleId}`}>{circleName}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

@@ -74,7 +74,7 @@ const primaryNavigation: NavigationItem[] = [
   { label: "Practice", icon: LibraryBig },
   { label: "Bookmarks", icon: Bookmark },
   { label: "Progress", icon: ChartNoAxesColumnIncreasing },
-  { label: "StudyCircle", icon: UsersRound, href: "/app", isFeature: true },
+  { label: "StudyCircle", icon: UsersRound, href: "/app/study-circle/lobby", isFeature: true },
   { label: "Store", icon: ShoppingCart },
   { label: "Profile", icon: UserRound },
   { label: "Settings", icon: Settings },
