@@ -231,6 +231,11 @@ button, input { font: inherit; }
 
 @keyframes rise-in { from { transform: translateY(18px); } to { transform: translateY(0); } }
 
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 @media (max-width: 1023px) {
   .constellation-panel { min-height: 410px; transform: none; }
 }

@@ -1,9 +1,7 @@
-import { Award, Check, Crown, ArrowLeft, BookOpen, Map } from "lucide-react";
+import { Award, Check, Crown, BookOpen, Map } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -63,58 +61,9 @@ export function MentorPreviewPage() {
 
   const selectedNote = data.workspace?.notes.find((n: any) => n.id === data.mentor_pick_note_id);
 
-  const { data: membershipData } = useQuery({
-    queryKey: ["membership"],
-    queryFn: api.getMembership,
-  });
-  const circleName = membershipData?.membership?.circle_name || "My Circle";
-
   return (
     <div className="w-full space-y-4">
-      <Breadcrumb>
-        <BreadcrumbList className="text-xs">
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/app/study-circle/lobby">StudyCircle</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to={`/app/study-circle/${circleId}`}>{circleName}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to={`/app/study-circle/${circleId}/mentor`}>Mentor Workspace</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Preview</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          className="size-8 rounded-lg"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            Roadmap Preview
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Review how your published roadmap will look to other circle members.
-          </p>
-        </div>
-      </div>
+      <AppPageHeader title="Roadmap Preview" description="Review how your published roadmap will look to other circle members." backTo={`/app/study-circle/${circleId}/mentor`} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-2 space-y-4">
@@ -196,12 +145,6 @@ export function MentorPreviewPage() {
             </CardContent>
           </Card>
 
-          <Button
-            className="w-full bg-[var(--brand-dark-blue)] hover:bg-[var(--brand-blue)] text-white"
-            onClick={() => navigate(-1)}
-          >
-            Back to Workspace
-          </Button>
         </div>
       </div>
     </div>

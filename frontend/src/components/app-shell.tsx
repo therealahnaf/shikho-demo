@@ -9,7 +9,6 @@ import {
   Home,
   LibraryBig,
   LogOut,
-  Search,
   Settings,
   ShoppingCart,
   UserRound,
@@ -17,7 +16,8 @@ import {
   Video,
   type LucideIcon,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Fragment } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,7 +31,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
   Sidebar,
   SidebarContent,
@@ -47,7 +54,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { User } from "@/lib/api";
+import { api, type User } from "@/lib/api";
 import { clearCredentials } from "@/lib/storage";
 
 function initials(name: string) {
@@ -134,6 +141,37 @@ export function AppShell({ user, children }: { user: User; children: React.React
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const membershipQuery = useQuery({ queryKey: ["membership"], queryFn: api.getMembership, retry: false });
+
+  const breadcrumbs = (() => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    if (location.pathname === "/app/home") return [{ label: "Home" }];
+    if (parts[1] !== "study-circle") return [{ label: "Shikho" }, { label: "Home" }];
+    const crumbs: Array<{ label: string; href?: string }> = [{ label: "StudyCircle", href: "/app/study-circle/lobby" }];
+    const section = parts[2];
+    const simpleLabels: Record<string, string> = { lobby: "Lobby", intro: "Introduction", explore: "Explore circles", recommended: "Recommended circle", joined: "Circle joined" };
+    if (!section || section === "lobby") return crumbs;
+    if (simpleLabels[section]) return [...crumbs, { label: simpleLabels[section] }];
+    const circlePath = `/app/study-circle/${section}`;
+    crumbs.push({ label: membershipQuery.data?.membership?.circle_name ?? "My circle", href: circlePath });
+    const view = parts[3];
+    if (!view) return crumbs;
+    if (view === "activity") return [...crumbs, { label: "Roadmap", href: `${circlePath}/roadmap` }, { label: "Activity" }];
+    if (view === "store") {
+      crumbs.push({ label: "Circle Store", href: `${circlePath}/store` });
+      if (parts[4] === "new") crumbs.push({ label: "Add note" });
+      else if (parts[4]) crumbs.push({ label: "Note" });
+      return crumbs;
+    }
+    if (view === "mentor") {
+      crumbs.push({ label: "Mentor workspace", href: `${circlePath}/mentor` });
+      if (parts[4] === "preview") crumbs.push({ label: "Preview" });
+      return crumbs;
+    }
+    const labels: Record<string, string> = { roadmap: "Roadmap", leaderboard: "Leaderboard" };
+    return [...crumbs, { label: labels[view] ?? view }];
+  })();
 
   function signOut() {
     clearCredentials();
@@ -160,14 +198,22 @@ export function AppShell({ user, children }: { user: User; children: React.React
         </div>
 
         <div className="flex min-w-0 flex-1 items-center gap-3 px-3 md:px-5">
-          <div className="relative hidden w-full max-w-md md:block">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              aria-label="Search Shikho"
-              className="h-9 bg-white pl-9 shadow-none"
-              placeholder="Search lessons, quizzes, topics..."
-            />
-          </div>
+          <Breadcrumb className="min-w-0 flex-1 overflow-hidden">
+            <BreadcrumbList className="flex-nowrap text-xs sm:text-sm">
+              {breadcrumbs.map((crumb, index) => (
+                <Fragment key={`${crumb.label}-${index}`}>
+                  {index > 0 ? <BreadcrumbSeparator className="hidden sm:block" /> : null}
+                  <BreadcrumbItem className={index < breadcrumbs.length - 1 ? "hidden sm:inline-flex" : "min-w-0"}>
+                    {crumb.href && index < breadcrumbs.length - 1 ? (
+                      <BreadcrumbLink asChild><Link to={crumb.href}>{crumb.label}</Link></BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage className="truncate font-semibold text-foreground">{crumb.label}</BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                </Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
               <Bell />

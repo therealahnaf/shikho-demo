@@ -21,6 +21,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader, pageActionClassName } from "@/components/app-page-header";
 import { ActivityFeedItem } from "@/components/activity-feed-item";
 import { useAppUser } from "@/components/app-layout";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -33,14 +34,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -298,38 +291,12 @@ export function CircleHomePage() {
 
   return (
     <div className="w-full space-y-4">
-        <div className="space-y-2">
-          <Breadcrumb>
-            <BreadcrumbList className="text-xs">
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem><BreadcrumbPage>{data.circle.name}</BreadcrumbPage></BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back, {firstName}! 👋</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Let&apos;s learn and win together.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]" onClick={() => setTourStep(0)}>
-                <HelpCircle className="size-4" /> Tour Tutorial
-              </Button>
-              <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]">
-                <Link to="/app/study-circle/lobby">
-                  <UsersRound className="size-4" /> Circle Lobby
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="outline" className="bg-white text-[var(--brand-dark-blue)]"><Link to={`/app/study-circle/${circleId}/store`}><LibraryBig className="size-4" /> Circle Store</Link></Button>
-              <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-white" onClick={() => setIsLeaveOpen(true)}>
-                Leave Circle
-              </Button>
-              <Badge variant="outline" className="border-[#b7c6e8] bg-white text-[var(--brand-dark-blue)]">Class 10 · Mathematics</Badge>
-            </div>
-          </div>
-        </div>
+        <AppPageHeader
+          title={`Welcome back, ${firstName}! 👋`}
+          description={`${data.circle.name} · Class 10 Mathematics`}
+          backTo="/app/study-circle/lobby"
+          actions={<><Button size="sm" variant="outline" className={`${pageActionClassName} bg-white text-[var(--brand-dark-blue)]`} onClick={() => setTourStep(0)}><HelpCircle className="size-4" /> Tutorial</Button><Button asChild size="sm" variant="outline" className={`${pageActionClassName} bg-white text-[var(--brand-dark-blue)]`}><Link to={`/app/study-circle/${circleId}/store`}><LibraryBig className="size-4" /> Circle Store</Link></Button><Button size="sm" variant="outline" className={`${pageActionClassName} border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700`} onClick={() => setIsLeaveOpen(true)}>Leave Circle</Button></>}
+        />
 
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px]">
           <Card

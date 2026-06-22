@@ -3,8 +3,8 @@ import { BookOpen, Plus } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader, pageActionClassName } from "@/components/app-page-header";
 import { NOTE_CATEGORY_LABELS, NoteCard } from "@/components/note-card";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,35 +19,13 @@ export function CircleStorePage() {
   const category = categories.includes(rawCategory as NoteCategory) ? rawCategory as NoteCategory : undefined;
   const notesQuery = useQuery({ queryKey: ["circle-notes", circleId, category ?? "all"], queryFn: () => api.getNotes(circleId, category), enabled: Boolean(circleId), retry: false });
   
-  const { data: membershipData } = useQuery({
-    queryKey: ["membership"],
-    queryFn: api.getMembership,
-  });
-  const circleName = membershipData?.membership?.circle_name || "My Circle";
-
   const changeCategory = (value: string) => setSearchParams(value === "all" ? {} : { category: value });
   if (notesQuery.isPending) return <AppPageLoading />;
   if (notesQuery.isError) return <AppPageError onRetry={() => void notesQuery.refetch()} />;
 
   return (
     <div className="w-full space-y-4">
-      <Breadcrumb>
-        <BreadcrumbList className="text-xs">
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{circleName}</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem><BreadcrumbPage>Circle Store</BreadcrumbPage></BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><h1 className="text-2xl font-bold">Circle Store</h1><p className="mt-1 text-sm text-muted-foreground">Notes and study resources shared by your circle.</p></div>
-        <Button asChild className="bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-magenta)]"><Link to={`/app/study-circle/${circleId}/store/new`}><Plus className="size-4" /> Add note</Link></Button>
-      </div>
+      <AppPageHeader title="Circle Store" description="Notes and study resources shared by your circle." backTo={`/app/study-circle/${circleId}`} actions={<Button asChild className={`${pageActionClassName} bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-magenta)]`}><Link to={`/app/study-circle/${circleId}/store/new`}><Plus className="size-4" /> Add note</Link></Button>} />
       <div className="hidden overflow-x-auto md:block"><Tabs value={category ?? "all"} onValueChange={changeCategory}><TabsList className="h-10 bg-white shadow-sm"><TabsTrigger value="all">All notes</TabsTrigger>{categories.map((item) => <TabsTrigger key={item} value={item}>{NOTE_CATEGORY_LABELS[item]}</TabsTrigger>)}</TabsList></Tabs></div>
       <div className="md:hidden"><Select value={category ?? "all"} onValueChange={changeCategory}><SelectTrigger className="bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All notes</SelectItem>{categories.map((item) => <SelectItem key={item} value={item}>{NOTE_CATEGORY_LABELS[item]}</SelectItem>)}</SelectContent></Select></div>
       {notesQuery.data.notes.length ? (

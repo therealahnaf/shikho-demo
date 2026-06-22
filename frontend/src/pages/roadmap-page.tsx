@@ -3,17 +3,10 @@ import { Check, LockKeyhole, Map, Play, UsersRound } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -63,29 +56,7 @@ export function RoadmapPage() {
 
   return (
     <div className="w-full space-y-4">
-        <Breadcrumb>
-          <BreadcrumbList className="text-xs">
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{data.circle.name}</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>Roadmap</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">Weekly Roadmap</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{data.roadmap.title} · {dates.format(new Date(data.cycle.starts_at))}–{dates.format(new Date(data.cycle.ends_at))}</p>
-          </div>
-          <Badge variant="secondary" className="bg-[#eef3ff] text-[var(--brand-dark-blue)]">
-            {data.next_checkpoint ? `Position ${data.membership.roadmap_position + 1}` : "Roadmap complete"}
-          </Badge>
-        </div>
+        <AppPageHeader title="Weekly Roadmap" description={`${data.roadmap.title} · ${dates.format(new Date(data.cycle.starts_at))}–${dates.format(new Date(data.cycle.ends_at))}`} backTo={`/app/study-circle/${circleId}`} actions={<Badge variant="secondary" className="h-9 rounded-lg bg-[#eef3ff] px-3 text-[var(--brand-dark-blue)]">{data.next_checkpoint ? `Position ${data.membership.roadmap_position + 1}` : "Roadmap complete"}</Badge>} />
 
         {data.next_checkpoint === null ? (
           <Alert className="border-0 bg-[#eef3ff]">

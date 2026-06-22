@@ -6,7 +6,7 @@ from datetime import datetime, time, timedelta, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select, text, update
+from sqlalchemy import func, select, text
 
 from app.db import AsyncSessionFactory, engine
 from app.models import (
@@ -325,17 +325,6 @@ async def seed_phase_one(now: datetime | None = None) -> dict[str, int]:
     ]
 
     async with AsyncSessionFactory() as session:
-        await session.execute(
-            update(Mission)
-            .where(Mission.circle_id != MISSION_ID, Mission.status == "active")
-            .values(status="archived")
-        )
-        await session.execute(
-            update(WeeklyCycle)
-            .where(WeeklyCycle.id != WEEKLY_CYCLE_ID, WeeklyCycle.status == "active")
-            .values(status="archived")
-        )
-
         # Seed Math Champions
         await seed_circle_helper(
             session, now, periods,
@@ -563,4 +552,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -7,8 +7,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { NOTE_CATEGORY_LABELS } from "@/components/note-card";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -70,33 +70,10 @@ export function NewNotePage() {
     setImage(file);
   }
 
-  const { data: membershipData } = useQuery({
-    queryKey: ["membership"],
-    queryFn: api.getMembership,
-  });
-  const circleName = membershipData?.membership?.circle_name || "My Circle";
-
   const serverError = mutation.error instanceof ApiError ? mutation.error.message : mutation.error?.message;
   return (
     <div className="w-full space-y-4">
-      <Breadcrumb>
-        <BreadcrumbList className="text-xs">
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{circleName}</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/store`}>Circle Store</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem><BreadcrumbPage>Add note</BreadcrumbPage></BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      <div><h1 className="text-2xl font-bold">Share a note</h1><p className="mt-1 text-sm text-muted-foreground">Useful study material earns 10 weekly points.</p></div>
+      <AppPageHeader title="Share a note" description="Useful study material earns 10 weekly points." backTo={`/app/study-circle/${circleId}/store`} />
       <Card className="max-w-3xl border-0 shadow-sm"><CardHeader><CardTitle className="text-base text-[var(--brand-dark-blue)]">Note details</CardTitle></CardHeader><CardContent>
         <Form {...form}><form className="space-y-5" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
           {serverError ? <Alert variant="destructive"><AlertTitle>Note could not be shared</AlertTitle><AlertDescription>{serverError}</AlertDescription></Alert> : null}

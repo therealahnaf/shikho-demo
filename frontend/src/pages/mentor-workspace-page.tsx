@@ -7,8 +7,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader, pageActionClassName } from "@/components/app-page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,7 +22,7 @@ const schema = z.object({
   checkpoints: z.array(
     z.object({
       topic_key: z.string().min(1, "Topic is required."),
-      activity_type: z.enum(["review", "lesson", "quiz", "challenge"]),
+      activity_type: z.enum(["review", "lesson", "quiz", "challenge", "assignment", "lab"]),
     })
   ).min(3, "Add at least 3 checkpoints.").max(5, "Keep within 5 checkpoints."),
 });
@@ -34,6 +34,8 @@ const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   lesson: "Lesson",
   quiz: "Quiz",
   challenge: "Challenge",
+  assignment: "Assignment",
+  lab: "Lab",
 };
 
 export function MentorWorkspacePage() {
@@ -137,44 +139,9 @@ export function MentorWorkspacePage() {
 
   const serverError = mutation.error instanceof ApiError ? mutation.error.message : mutation.error?.message;
 
-  const { data: membershipData } = useQuery({
-    queryKey: ["membership"],
-    queryFn: api.getMembership,
-  });
-  const circleName = membershipData?.membership?.circle_name || "My Circle";
-
   return (
     <div className="w-full space-y-4">
-      <Breadcrumb>
-        <BreadcrumbList className="text-xs">
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/app/study-circle/lobby">StudyCircle</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to={`/app/study-circle/${circleId}`}>{circleName}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Mentor Workspace</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Crown className="size-6 text-[var(--brand-yellow)] fill-[var(--brand-yellow)]" /> Mentor Workspace
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Plan, reorder, and publish the communal roadmap for next week.
-          </p>
-        </div>
-      </div>
+      <AppPageHeader title="Mentor Workspace" description="Plan, reorder, and publish the communal roadmap for next week." backTo={`/app/study-circle/${circleId}`} actions={<><Button type="button" variant="outline" className={`${pageActionClassName} bg-white`} onClick={handlePreview}>Preview roadmap</Button><Button type="submit" form="mentor-roadmap-form" className={`${pageActionClassName} bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-magenta)]`} disabled={mutation.isPending}>{mutation.isPending ? "Publishing..." : "Publish roadmap"}</Button></>} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-2 space-y-4">
@@ -187,7 +154,7 @@ export function MentorWorkspacePage() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+                <form id="mentor-roadmap-form" className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
                   {serverError ? (
                     <Alert variant="destructive">
                       <AlertTitle>Could not publish roadmap</AlertTitle>
@@ -360,17 +327,6 @@ export function MentorWorkspacePage() {
                     )}
                   />
 
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={handlePreview}>
-                      Preview Roadmap
-                    </Button>
-                    <Button
-                      disabled={mutation.isPending}
-                      className="bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-magenta)]"
-                    >
-                      {mutation.isPending ? "Publishing..." : "Publish Roadmap"}
-                    </Button>
-                  </div>
                 </form>
               </Form>
             </CardContent>

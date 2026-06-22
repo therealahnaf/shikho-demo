@@ -202,7 +202,14 @@ async def create_circle(
 ) -> JoinCircleResponse:
     from app.schemas.circle import CircleLeaderboardResponse, CreateCircleRequest
     from app.services.circles import create_circle_service
-    return await create_circle_service(session, current_user, request.name, request.description)
+    return await create_circle_service(
+        session,
+        current_user,
+        request.name,
+        request.description,
+        request.chapter_key,
+        request.actions,
+    )
 
 
 @router.post("/circles/{circle_id}/leave", response_model=LeaveCircleResponse)
@@ -225,6 +232,5 @@ async def read_circle_members(
     from app.schemas.circle import CircleMembersResponse
     from app.services.circles import get_circle_members
     return await get_circle_members(session, current_user, circle_id)
-
 
 

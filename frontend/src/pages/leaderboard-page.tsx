@@ -3,16 +3,9 @@ import { Crown, Trophy } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
@@ -39,23 +32,7 @@ export function LeaderboardPage() {
   const dates = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
   return (
     <div className="w-full space-y-4">
-        <Breadcrumb>
-          <BreadcrumbList className="text-xs">
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{data.circle.name}</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>Leaderboard</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div><h1 className="text-2xl font-bold">Weekly Leaderboard</h1><p className="mt-1 text-sm text-muted-foreground">{dates.format(new Date(data.cycle.starts_at))}–{dates.format(new Date(data.cycle.ends_at))}</p></div>
-          <Badge className="bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-pink)]">Your rank #{data.current_user_rank}</Badge>
-        </div>
+        <AppPageHeader title="Weekly Leaderboard" description={`${dates.format(new Date(data.cycle.starts_at))}–${dates.format(new Date(data.cycle.ends_at))}`} backTo={`/app/study-circle/${circleId}`} actions={<Badge className="h-9 rounded-lg bg-[var(--brand-pink)] px-3 text-white hover:bg-[var(--brand-pink)]">Your rank #{data.current_user_rank}</Badge>} />
         <Card className="overflow-hidden border-0 shadow-sm">
           <CardHeader className="p-4"><CardTitle className="flex items-center gap-2 text-sm text-[var(--brand-dark-blue)]"><Trophy className="size-4" /> {data.circle.name}</CardTitle></CardHeader>
           <CardContent className="p-0">

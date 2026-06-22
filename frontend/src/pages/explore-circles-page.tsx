@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -164,25 +165,8 @@ export function ExploreCirclesPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-6 space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/app/study-circle/lobby")}
-            className="pl-0 text-slate-600 hover:text-indigo-600 hover:bg-transparent -ml-1 flex items-center gap-1.5"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to Lobby
-          </Button>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <UsersRound className="h-8 w-8 text-indigo-600" /> Explore Study Circles
-          </h1>
-          <p className="text-slate-500">
-            Discover cohorts and study circles in Class 10 Mathematics. Click a row to view details.
-          </p>
-        </div>
-      </div>
+    <div className="w-full space-y-4 py-4">
+      <AppPageHeader title="Explore Study Circles" description="Discover cohorts and StudyCircles in Class 10 Mathematics." backTo="/app/study-circle/lobby" actions={<Badge className="h-9 rounded-lg bg-[#eef3ff] px-3 text-[var(--brand-dark-blue)] hover:bg-[#eef3ff]">{circles.length} circles</Badge>} />
 
       {/* Circles Table Card */}
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">

@@ -1,14 +1,18 @@
 import { useState } from "react";
-import { PlusCircle, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crown, Plus, PlusCircle, Trash2, UsersRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -19,27 +23,32 @@ import {
 } from "@/components/ui/dialog";
 
 import { api, ApiError, CircleLeaderboardEntry } from "@/lib/api";
-import { useAppUser } from "@/components/app-layout";
-import { cn } from "@/lib/utils";
+import shikhoBanner from "@/public/shikho-banner.png";
+import shikhoCircleStore from "@/public/shikho-circle-store.png";
+import shikhoMentor from "@/public/shikho-mentor.png";
+import shikhoRoadmap from "@/public/shikho-roadmap.png";
+import shikhoStreaks from "@/public/shikho-streaks.png";
 
-const BUBBLE_COLORS = [
-  "#6366F1", // Indigo
-  "#0EA5E9", // Sky
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#EC4899", // Pink
-  "#8B5CF6", // Violet
+type CreatorAction = "review" | "quiz" | "assignment" | "lab";
+
+const CREATOR_ACTIONS: Array<{ value: CreatorAction; label: string }> = [
+  { value: "review", label: "Review" },
+  { value: "quiz", label: "Quiz" },
+  { value: "assignment", label: "Assignment" },
+  { value: "lab", label: "Lab" },
 ];
 
-const truncate = (str: string, maxLen: number) => {
-  return str.length > maxLen ? str.slice(0, maxLen - 1) + "…" : str;
-};
+const COURSE_CHAPTERS = [
+  { value: "real_numbers", label: "Real Numbers" },
+  { value: "algebraic_expressions", label: "Algebraic Expressions" },
+  { value: "linear_equations", label: "Linear Equations" },
+  { value: "geometry", label: "Geometry" },
+  { value: "trigonometry", label: "Trigonometry" },
+];
 
 export function LobbyPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const user = useAppUser();
-
   // Circles Leaderboard State
   const { data: circlesData, isLoading: circlesLoading } = useQuery({
     queryKey: ["circles"],
@@ -62,10 +71,10 @@ export function LobbyPage() {
   // Form states for creating circle
   const [newCircleName, setNewCircleName] = useState("");
   const [newCircleDesc, setNewCircleDesc] = useState("");
+  const [createStep, setCreateStep] = useState<1 | 2>(1);
+  const [chapterKey, setChapterKey] = useState("linear_equations");
+  const [roadmapActions, setRoadmapActions] = useState<CreatorAction[]>(["review", "quiz"]);
   const [createError, setCreateError] = useState<string | null>(null);
-
-  // Hover state for constellation (must be declared before early returns)
-  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
 
   // Handle joining a circle
   const handleJoinCircle = async (circleId: string) => {
@@ -86,10 +95,19 @@ export function LobbyPage() {
   const handleCreateCircleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCircleName.trim() || !newCircleDesc.trim()) return;
+    if (createStep === 1) {
+      setCreateStep(2);
+      return;
+    }
     setIsCreating(true);
     setCreateError(null);
     try {
-      const res = await api.createCircle(newCircleName.trim(), newCircleDesc.trim());
+      const res = await api.createCircle(
+        newCircleName.trim(),
+        newCircleDesc.trim(),
+        chapterKey,
+        roadmapActions,
+      );
       queryClient.invalidateQueries({ queryKey: ["membership"] });
       navigate(res.circle_home_path);
     } catch (err) {
@@ -103,7 +121,7 @@ export function LobbyPage() {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto" />
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[var(--brand-dark-blue)] border-t-white" />
           <p className="mt-4 text-sm font-semibold text-slate-500">Loading circles...</p>
         </div>
       </div>
@@ -112,295 +130,143 @@ export function LobbyPage() {
 
   const circles = circlesData?.circles ?? [];
 
-  // Clustered Constellation Leaderboard Placement Logic
-  const displayCircles = circles.slice(0, 35);
-  
-  const positions = displayCircles.map((circle, index) => {
-    // Deterministic placement for clustered network
-    if (index === 0) {
-      return { ...circle, x: 330, y: 170, r: 42, color: "#4F46E5", cluster: 0 }; // Indigo
-    }
-    if (index === 1) {
-      return { ...circle, x: 470, y: 200, r: 42, color: "#0EA5E9", cluster: 0 }; // Sky Blue
-    }
-    if (index === 2) {
-      return { ...circle, x: 400, y: 275, r: 42, color: "#10B981", cluster: 0 }; // Emerald
-    }
-    
-    // Distribute into 3 clusters
-    const clusterId = (index % 3) + 1;
-    const clusterIndex = Math.floor((index - 3) / 3); // 0, 1, 2, ...
-    
-    let cx = 0, cy = 0;
-    let color = "";
-    let innerOffset = 0;
-    let outerOffset = 0;
-    
-    if (clusterId === 1) {
-      // Cluster 1: Purple (Left side)
-      cx = 160;
-      cy = 210;
-      color = index % 2 === 0 ? "#8B5CF6" : "#A78BFA";
-      innerOffset = 0;
-      outerOffset = 0;
-    } else if (clusterId === 2) {
-      // Cluster 2: Blue (Right side)
-      cx = 640;
-      cy = 210;
-      color = index % 2 === 0 ? "#2563EB" : "#60A5FA";
-      innerOffset = 0;
-      outerOffset = 0;
-    } else {
-      // Cluster 3: Pink/Cyan (Bottom/Center)
-      cx = 400;
-      cy = 380;
-      color = index % 2 === 0 ? "#EC4899" : "#06B6D4";
-      innerOffset = Math.PI / 4; // rotate to avoid straight up overlap
-      outerOffset = Math.PI / 6;
-    }
-    
-    let angle = 0;
-    let dist = 0;
-    let r = 18;
-    
-    if (clusterIndex < 4) {
-      // Inner ring (4 nodes)
-      angle = (clusterIndex * Math.PI) / 2 + innerOffset;
-      dist = 52;
-      r = 20;
-    } else {
-      // Outer ring (remaining nodes)
-      const outerIndex = clusterIndex - 4;
-      angle = (outerIndex * Math.PI) / 3.5 + outerOffset;
-      dist = 92;
-      r = 16;
-    }
-    
-    const x = cx + Math.cos(angle) * dist;
-    const y = cy + Math.sin(angle) * dist;
-    
-    return {
-      ...circle,
-      x,
-      y,
-      r,
-      color,
-      cluster: clusterId,
-    };
-  });
-
-  const connections: Array<{ from: number; to: number }> = [];
-  if (positions.length > 0) {
-    // 1. Connect central nodes
-    if (positions.length > 1) connections.push({ from: 0, to: 1 });
-    if (positions.length > 2) {
-      connections.push({ from: 0, to: 2 });
-      connections.push({ from: 1, to: 2 });
-    }
-    
-    // 2. Connect clusters to central nodes
-    if (positions.length > 3) connections.push({ from: 0, to: 3 });
-    if (positions.length > 4) connections.push({ from: 1, to: 4 });
-    if (positions.length > 5) connections.push({ from: 2, to: 5 });
-    
-    // 3. Connect nodes within clusters
-    for (let i = 3; i < positions.length; i++) {
-      if (i + 3 < positions.length) {
-        connections.push({ from: i, to: i + 3 });
-      }
-      if (i + 6 < positions.length && i % 2 === 0) {
-        connections.push({ from: i, to: i + 6 });
-      }
-    }
-  }
+  const topCircles = circles.slice(0, 3);
+  const remainingCircles = circles.slice(3, 8);
 
 
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_2fr] lg:items-start max-w-7xl mx-auto">
+    <div className="w-full space-y-4">
+      <AppPageHeader
+        title="StudyCircle"
+        description="Compete individually. Progress together. Keep your circle alive."
+        backTo="/app/home"
+      />
+      <div className="grid w-full gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
       {/* Controls Panel */}
-      <div className="space-y-6">
-        <Card className="border-slate-200 shadow-sm bg-white text-slate-900">
-          <CardHeader className="pb-4">
-            <Badge className="w-fit bg-indigo-50 text-indigo-700 hover:bg-indigo-50 border-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5">
-              Lobby
-            </Badge>
-            <CardTitle className="text-2xl font-black tracking-tight text-slate-900 mt-2">
-              Welcome, {user.display_name}!
-            </CardTitle>
-            <CardDescription className="text-slate-500 mt-1">
-              {membership ? (
-                `You are a member of ${membership.circle_name}. You can explore other circles or return to your dashboard.`
-              ) : (
-                "You are not in a StudyCircle yet. Choose one from the leaderboard constellation or start your own."
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {membership ? (
-              <Button
-                onClick={() => navigate(`/app/study-circle/${membership.circle_id}`)}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11"
-              >
-                Go to My Circle
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setIsCreateOpen(true)}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Create a Circle
-              </Button>
-            )}
-          </CardContent>
+      <div className="h-full">
+        <Card
+          className="relative h-full min-h-[560px] overflow-hidden border-0 bg-[#123894] bg-cover bg-right-top text-white shadow-sm lg:min-h-[620px]"
+          style={{ backgroundImage: `url(${shikhoBanner})` }}
+        >
+          <div className="absolute inset-0 bg-[#071b52]/35" />
+          <div className="relative z-10 flex h-full min-h-[560px] w-full flex-col justify-start p-6 lg:min-h-[620px] lg:p-8">
+            <div className="w-full">
+              <h2 className="max-w-[760px] text-4xl font-black leading-[1.04] tracking-tight [text-shadow:0_4px_18px_rgba(0,0,0,0.65)] xl:text-5xl">Stay ahead of the competition by moving forward together.</h2>
+            </div>
+
+            <div className="flex flex-1 items-center justify-center py-6">
+              <div className="flex items-center gap-4">
+                <Button className="bg-white font-semibold text-[var(--brand-dark-blue)] shadow-[0_4px_18px_rgba(0,0,0,0.65)] hover:bg-white" onClick={() => navigate("/app/study-circle/explore")}>
+                  Explore circles <ArrowRight className="size-4" />
+                </Button>
+                <Separator orientation="vertical" className="h-8 bg-white/70" />
+                {membership ? (
+                  <Button className="bg-[var(--brand-pink)] font-semibold text-white shadow-[0_4px_18px_rgba(0,0,0,0.65)] hover:bg-[var(--brand-magenta)]" onClick={() => navigate(`/app/study-circle/${membership.circle_id}`)}>Go to my circle</Button>
+                ) : (
+                  <Button className="bg-[var(--brand-pink)] font-semibold text-white shadow-[0_4px_18px_rgba(0,0,0,0.65)] hover:bg-[var(--brand-magenta)]" onClick={() => setIsCreateOpen(true)}><PlusCircle className="size-4" /> Create circle</Button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-auto flex w-full flex-wrap gap-2">
+              <Badge className="border-0 bg-[var(--brand-pink)] px-3 py-1 text-white shadow-lg hover:bg-[var(--brand-pink)]">A new way to stay ahead</Badge>
+              {["Mathematics", "Physics", "Chemistry"].map((subject) => <Badge key={subject} variant="outline" className="border-white bg-white/90 px-3 py-1 text-[var(--brand-dark-blue)] shadow-md">{subject}</Badge>)}
+            </div>
+          </div>
         </Card>
 
-        {/* Explore Circles Card */}
-        <Card className="border-indigo-100 shadow-sm bg-indigo-50 text-indigo-950">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-indigo-700">
-              <Sparkles className="h-4 w-4 fill-indigo-700" />
-              <span className="text-xs font-bold uppercase tracking-wider">Discover Cohorts</span>
-            </div>
-            <CardTitle className="text-xl font-extrabold tracking-tight mt-1 text-indigo-950">
-              Explore Study Circles
-            </CardTitle>
-            <CardDescription className="text-indigo-800/80">
-              Find and join existing study circles in Class 10 Mathematics.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm leading-relaxed text-indigo-900">
-              Browse the list of all available circles, check their active members, see points leaderboards, and find the perfect team to study with.
-            </p>
-            <Button
-              onClick={() => navigate("/app/study-circle/explore")}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10"
-            >
-              Explore Circles
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Interactive Constellation Leaderboard */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center px-2">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900">StudyCircles Leaderboard</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Sized by circle points. Click a bubble to view details and join.</p>
-          </div>
-        </div>
-
-        <Card className="border-slate-200 overflow-hidden bg-slate-50/50 shadow-sm relative">
-          <div className="relative w-full aspect-[8/5] min-h-[350px]">
-            {circles.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm font-semibold">
-                No StudyCircles found. Create the first one!
+      <div className="h-full">
+        <Card className="flex h-full flex-col overflow-hidden border-0 bg-white shadow-sm">
+          <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
+            <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--brand-pink)]">Mathematics subject area</p><CardTitle className="mt-1 text-2xl">Circles leaderboard</CardTitle><CardDescription className="mt-1 leading-5">Rankings use the shared points earned by circles in the same subject.</CardDescription></div>
+            <Select defaultValue="mathematics"><SelectTrigger className="w-[135px] shadow-none"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mathematics">Mathematics</SelectItem><SelectItem value="physics">Physics</SelectItem><SelectItem value="chemistry">Chemistry</SelectItem></SelectContent></Select>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col space-y-4 p-4 pt-2">
+            {circles.length === 0 ? <div className="flex min-h-72 items-center justify-center text-sm font-medium text-muted-foreground">No circles found in this subject.</div> : <>
+              <div className="grid grid-cols-3 items-end gap-2 border-b border-[#e5e9f2] pb-4">
+                {[topCircles[1], topCircles[0], topCircles[2]].map((circle, podiumIndex) => circle ? <button key={circle.id} type="button" onClick={() => setSelectedCircle(circle)} className={`rounded-xl p-3 text-center hover:bg-[#F2F5FC] ${podiumIndex === 1 ? "bg-[#F2F5FC]" : ""}`}>
+                  <div className={`mx-auto flex items-center justify-center rounded-full font-black text-white ${podiumIndex === 1 ? "size-16 bg-[var(--brand-pink)] text-2xl" : "size-12 bg-[var(--brand-dark-blue)] text-lg"}`}>{circle.name.slice(0, 1).toUpperCase()}</div>
+                  <span className={`mt-2 block truncate text-sm font-bold ${podiumIndex === 1 ? "text-[var(--brand-pink)]" : ""}`}>{circle.name}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{circle.points.toLocaleString()} pts</span>
+                  <Badge className={`mt-2 ${podiumIndex === 1 ? "bg-[var(--brand-yellow)] text-black" : "bg-[#E8EDF8] text-[var(--brand-dark-blue)]"}`}>#{podiumIndex === 0 ? 2 : podiumIndex === 1 ? 1 : 3}</Badge>
+                </button> : <div key={podiumIndex} />)}
               </div>
-            ) : (
-              <>
-                <svg
-                  viewBox="0 0 800 500"
-                  className="w-full h-full select-none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* Constellation Connection Lines */}
-                  {connections.map((conn, idx) => {
-                    const fromNode = positions[conn.from];
-                    const toNode = positions[conn.to];
-                    if (!fromNode || !toNode) return null;
-                    
-                    const isHighlighted = hoveredNode === conn.from || hoveredNode === conn.to;
-                    return (
-                      <line
-                        key={`link-${idx}`}
-                        x1={fromNode.x}
-                        y1={fromNode.y}
-                        x2={toNode.x}
-                        y2={toNode.y}
-                        className={cn(
-                          "transition-all duration-300",
-                          isHighlighted ? "stroke-indigo-500 stroke-[2]" : "stroke-slate-200/80 stroke-[1.5]"
-                        )}
-                      />
-                    );
-                  })}
-
-                  {/* Interactive Circle Bubbles */}
-                  {positions.map((node, index) => {
-                    const isHovered = hoveredNode === index;
-                    return (
-                      <g
-                        key={node.id}
-                        className="transition-transform duration-300 hover:scale-[1.08] cursor-pointer origin-center"
-                        style={{
-                          transformBox: "fill-box",
-                          transformOrigin: "center",
-                        }}
-                        onMouseEnter={() => setHoveredNode(index)}
-                        onMouseLeave={() => setHoveredNode(null)}
-                        onClick={() => setSelectedCircle(node)}
-                      >
-                        <circle
-                          cx={node.x}
-                          cy={node.y}
-                          r={node.r}
-                          fill={node.color}
-                          className="stroke-white stroke-[3] transition-all duration-300"
-                        />
-                        
-                        {/* Display text inside circles only if they are medium/large */}
-                        {node.r >= 32 ? (
-                          <text
-                            x={node.x}
-                            y={node.y}
-                            textAnchor="middle"
-                            className="fill-white font-bold select-none pointer-events-none text-center"
-                          >
-                            <tspan x={node.x} dy="-0.3em" className="text-[10px] font-black tracking-tight">
-                              {truncate(node.name, 10)}
-                            </tspan>
-                            <tspan x={node.x} dy="1.2em" className="text-[9px] font-bold fill-slate-100">
-                              {node.points} pts
-                            </tspan>
-                          </text>
-                        ) : (
-                          // For small circles, show their rank
-                          <text
-                            x={node.x}
-                            y={node.y + 3.5}
-                            textAnchor="middle"
-                            className="fill-white font-black text-[9px] select-none pointer-events-none"
-                          >
-                            {index + 1}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
-
-                {/* Floating Tooltip */}
-                {hoveredNode !== null && positions[hoveredNode] && (
-                  <div
-                    className="absolute bg-slate-900 text-white text-xs rounded-lg py-1.5 px-3 pointer-events-none shadow-md z-10 -translate-x-1/2 -translate-y-full flex flex-col gap-0.5 border border-slate-800 transition-all duration-200"
-                    style={{
-                      left: `${positions[hoveredNode].x}px`,
-                      top: `${positions[hoveredNode].y - positions[hoveredNode].r - 6}px`,
-                    }}
-                  >
-                    <span className="font-bold text-slate-100">{positions[hoveredNode].name}</span>
-                    <span className="text-[10px] text-indigo-300 font-semibold">
-                      Rank #{hoveredNode + 1} · {positions[hoveredNode].points} pts · {positions[hoveredNode].member_count}/10 members
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+              <div className="overflow-hidden rounded-lg bg-[#f8f9fc]">
+                <Table><TableBody>{remainingCircles.map((circle, index) => <TableRow key={circle.id} className="cursor-pointer border-b border-[#e5e9f2] last:border-0" onClick={() => setSelectedCircle(circle)}><TableCell className="w-10 font-bold">{index + 4}</TableCell><TableCell><div className="flex items-center gap-2"><div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-dark-blue)] text-xs font-bold text-white">{circle.name.slice(0, 1).toUpperCase()}</div><span className="truncate font-medium">{circle.name}</span></div></TableCell><TableCell className="text-right text-muted-foreground">{circle.points.toLocaleString()} pts</TableCell><TableCell className="w-8">{index % 3 === 0 ? <ArrowUp className="size-4 text-green-600" /> : index % 3 === 1 ? <ArrowDown className="size-4 text-[var(--brand-pink)]" /> : <span className="text-muted-foreground">—</span>}</TableCell></TableRow>)}</TableBody></Table>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-[#F2F5FC] px-3 py-2 text-xs"><span className="flex items-center gap-2 text-muted-foreground"><UsersRound className="size-4 text-[var(--brand-dark-blue)]" /> New rankings every week</span><Button variant="link" className="h-auto p-0 text-xs" onClick={() => navigate("/app/study-circle/explore")}>View all circles <ArrowRight className="size-3" /></Button></div>
+            </>}
+          </CardContent>
         </Card>
       </div>
+      </div>
+
+      <section className="space-y-5 pt-2" aria-labelledby="how-circles-work">
+        <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-pink)]">Built for shared momentum</p>
+            <h2 id="how-circles-work" className="mt-2 text-3xl font-black tracking-tight text-[var(--brand-dark-blue)]">How circles keep you ahead</h2>
+          </div>
+          <p className="max-w-3xl text-base leading-7 text-muted-foreground">A StudyCircle turns competition into a team advantage. Join up to nine students in your subject, work toward the same goals, and build a circle score that proves how consistently your group is moving forward.</p>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Card className="overflow-hidden border-0 bg-white shadow-sm">
+            <div className="grid min-h-[300px] sm:grid-cols-[0.9fr_1.1fr]">
+              <div className="flex flex-col justify-center p-6">
+                <Badge className="w-fit bg-[var(--brand-dark-blue)] text-white hover:bg-[var(--brand-dark-blue)]">01 · Follow the week</Badge>
+                <CardTitle className="mt-4 text-2xl leading-tight">A roadmap that matches what you are learning now</CardTitle>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Every circle receives a focused weekly roadmap built from the current syllabus. Everyone can see the same destination, the next activity, and how far the group has progressed—so nobody has to guess what to study next.</p>
+              </div>
+              <div className="bg-[#F2F5FC] p-4"><img src={shikhoRoadmap} alt="Students following a shared weekly learning roadmap" className="size-full object-contain" /></div>
+            </div>
+          </Card>
+
+          <Card className="overflow-hidden border-0 bg-white shadow-sm">
+            <div className="grid min-h-[300px] sm:grid-cols-[0.9fr_1.1fr]">
+              <div className="flex flex-col justify-center p-6">
+                <Badge className="w-fit bg-[var(--brand-pink)] text-white hover:bg-[var(--brand-pink)]">02 · Earn the lead</Badge>
+                <CardTitle className="mt-4 text-2xl leading-tight">First place becomes next week’s Mentor</CardTitle>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Leadership is earned through contribution. The student who finishes first on the previous week’s member leaderboard becomes the next Mentor and selects the syllabus-based roadmap the circle will tackle together.</p>
+              </div>
+              <div className="bg-[#F2F5FC] p-4"><img src={shikhoMentor} alt="A student Mentor guiding the circle through its roadmap" className="size-full object-contain" /></div>
+            </div>
+          </Card>
+
+          <Card className="overflow-hidden border-0 bg-white shadow-sm">
+            <div className="grid min-h-[300px] sm:grid-cols-[0.9fr_1.1fr]">
+              <div className="flex flex-col justify-center p-6">
+                <Badge className="w-fit bg-[var(--brand-yellow)] text-black hover:bg-[var(--brand-yellow)]">03 · Win together</Badge>
+                <CardTitle className="mt-4 text-2xl leading-tight">Turn daily effort into circle power</CardTitle>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">Daily quests create quick wins while monthly missions reward sustained teamwork. Every completed goal adds to the circle’s shared points. At least one member must complete an activity each day to protect the streak—if it reaches zero, the circle dies.</p>
+              </div>
+              <div className="bg-[#F2F5FC] p-4"><img src={shikhoStreaks} alt="Circle members combining daily activity to maintain their streak" className="size-full object-contain" /></div>
+            </div>
+          </Card>
+
+          <Card className="overflow-hidden border-0 bg-white shadow-sm">
+            <div className="grid min-h-[300px] sm:grid-cols-[0.9fr_1.1fr]">
+              <div className="flex flex-col justify-center p-6">
+                <Badge className="w-fit bg-[var(--brand-blue)] text-white hover:bg-[var(--brand-blue)]">04 · Build the library</Badge>
+                <CardTitle className="mt-4 text-2xl leading-tight">Your circle’s best resources, in one place</CardTitle>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">The Circle Store is a shared home for notes and study resources. Every member can upload and view material, then upvote or downvote it so the most useful explanations rise to the top for the whole circle.</p>
+              </div>
+              <div className="bg-[#F2F5FC] p-4"><img src={shikhoCircleStore} alt="Students sharing and rating resources in the Circle Store" className="size-full object-contain" /></div>
+            </div>
+          </Card>
+        </div>
+
+        <Card className="border-0 bg-[var(--brand-dark-blue)] text-white shadow-sm">
+          <CardContent className="grid gap-5 p-6 md:grid-cols-[1fr_auto] md:items-center">
+            <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-yellow)]">Your subject. Your league.</p><h3 className="mt-2 text-2xl font-black">Compete against circles learning the same subject</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-white">Mathematics circles compete with Mathematics circles, Physics with Physics, and Chemistry with Chemistry. Each subject has its own leaderboard, making every ranking relevant and every point meaningful.</p></div>
+            <div className="flex flex-wrap gap-2">{["Mathematics", "Physics", "Chemistry"].map((subject) => <Badge key={subject} className="bg-white text-[var(--brand-dark-blue)] hover:bg-white">{subject}</Badge>)}</div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Dialog: Confirm Join */}
       <Dialog open={selectedCircle !== null} onOpenChange={(open) => { if (!open) setSelectedCircle(null); }}>
@@ -436,7 +302,7 @@ export function LobbyPage() {
               <Button
                 onClick={() => handleJoinCircle(selectedCircle.id)}
                 disabled={isJoining || selectedCircle.member_count >= 10 || !!membership}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+                className="bg-[var(--brand-dark-blue)] font-semibold text-white hover:bg-[var(--brand-blue)]"
               >
                 {isJoining ? "Joining..." : selectedCircle.member_count >= 10 ? "Circle Full" : membership ? "Already in a Circle" : "Confirm Join"}
               </Button>
@@ -446,18 +312,21 @@ export function LobbyPage() {
       </Dialog>
 
       {/* Dialog: Create Circle */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="bg-white border-slate-200 text-slate-900 rounded-2xl p-6 max-w-md">
+      <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) setCreateStep(1); }}>
+        <DialogContent className="max-w-lg rounded-2xl border-slate-200 bg-white p-6 text-slate-900">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">
-              Create a new StudyCircle
+              {createStep === 1 ? "Create a new StudyCircle" : "Build your first weekly roadmap"}
             </DialogTitle>
             <DialogDescription className="text-slate-500 mt-2">
-              Start a new circle for Class 10 Mathematics. You will be the creator and first member.
+              {createStep === 1
+                ? "Start a Class 10 Mathematics circle. You will become its first member and Mentor of the Week."
+                : "As the founding Mentor, choose the chapter and activities your circle will complete this week."}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateCircleSubmit} className="space-y-4 mt-4">
+            {createStep === 1 ? <>
             <div className="space-y-2">
               <Label htmlFor="circle-name" className="text-sm font-semibold text-slate-700">
                 Circle Name
@@ -468,7 +337,7 @@ export function LobbyPage() {
                 placeholder="e.g. Math Mavericks"
                 value={newCircleName}
                 onChange={(e) => setNewCircleName(e.target.value)}
-                className="border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                className="border-slate-200 focus:border-[var(--brand-dark-blue)] focus:ring-[var(--brand-dark-blue)]"
               />
             </div>
             <div className="space-y-2">
@@ -481,9 +350,39 @@ export function LobbyPage() {
                 placeholder="e.g. Master trigonometry and algebra together."
                 value={newCircleDesc}
                 onChange={(e) => setNewCircleDesc(e.target.value)}
-                className="w-full min-h-[80px] p-3 rounded-md border border-slate-200 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+                className="min-h-[80px] w-full rounded-md border border-slate-200 p-3 text-sm focus:border-[var(--brand-dark-blue)] focus:outline-none focus:ring-[var(--brand-dark-blue)]"
               />
             </div>
+            </> : <>
+              <div className="flex items-start gap-3 rounded-xl bg-[#fff6dc] p-4 text-[#624500]">
+                <Crown className="mt-0.5 size-5 shrink-0 text-[var(--brand-yellow)]" />
+                <div><p className="text-sm font-bold">You are this week’s Mentor</p><p className="mt-1 text-xs leading-5">The founding Mentor sets the circle’s first syllabus roadmap. Future Mentors are selected from the previous week’s #1 student.</p></div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="roadmap-chapter" className="text-sm font-semibold text-slate-700">Course chapter</Label>
+                <Select value={chapterKey} onValueChange={setChapterKey}>
+                  <SelectTrigger id="roadmap-chapter" className="bg-white"><SelectValue placeholder="Choose a chapter" /></SelectTrigger>
+                  <SelectContent>{COURSE_CHAPTERS.map((chapter) => <SelectItem key={chapter.value} value={chapter.value}>{chapter.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Static Class 10 Mathematics chapters for the current product preview.</p>
+              </div>
+
+              <div className="space-y-3">
+                <div><Label className="text-sm font-semibold text-slate-700">Roadmap actions</Label><p className="mt-1 text-xs text-muted-foreground">Members complete these actions in order.</p></div>
+                {roadmapActions.map((action, index) => (
+                  <div key={`${index}-${action}`} className="flex items-center gap-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-dark-blue)] text-xs font-bold text-white">{index + 1}</span>
+                    <Select value={action} onValueChange={(value: CreatorAction) => setRoadmapActions((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))}>
+                      <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+                      <SelectContent>{CREATOR_ACTIONS.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button type="button" variant="ghost" size="icon" disabled={roadmapActions.length === 1} onClick={() => setRoadmapActions((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove action ${index + 1}`}><Trash2 className="size-4 text-red-500" /></Button>
+                  </div>
+                ))}
+                {roadmapActions.length < 5 ? <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setRoadmapActions((current) => [...current, "review"])}><Plus className="size-4" /> Add action</Button> : null}
+              </div>
+            </>}
 
             {createError && (
               <Alert variant="destructive" className="mt-2">
@@ -493,15 +392,13 @@ export function LobbyPage() {
             )}
 
             <DialogFooter className="flex gap-2 sm:justify-end pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="border-slate-200 text-slate-700 hover:bg-slate-50">
-                Cancel
-              </Button>
+              {createStep === 1 ? <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</Button> : <Button type="button" variant="outline" onClick={() => setCreateStep(1)}><ArrowLeft className="size-4" /> Back</Button>}
               <Button
                 type="submit"
                 disabled={isCreating}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+                className="bg-[var(--brand-dark-blue)] font-semibold text-white hover:bg-[var(--brand-blue)]"
               >
-                {isCreating ? "Creating..." : "Create Circle"}
+                {isCreating ? "Creating..." : createStep === 1 ? <>Continue <ArrowRight className="size-4" /></> : "Create circle and publish roadmap"}
               </Button>
             </DialogFooter>
           </form>

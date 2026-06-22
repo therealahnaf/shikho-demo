@@ -2,6 +2,8 @@
 
 StudyCircle is Shikho's Class 10 Mathematics community experience. Students create a lightweight local identity, join the seeded `Math Champions` cohort, and view its mission, daily quest, roadmap, leaderboard, Mentor, streak, and recent activity.
 
+For containerized VM deployment with PostgreSQL and Cloudflare Tunnels, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Prerequisites
 
 - Node.js 22+

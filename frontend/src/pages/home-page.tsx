@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader } from "@/components/app-page-header";
 import { useAppUser } from "@/components/app-layout";
-import { CohortBadge } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,19 +31,8 @@ export function HomePage() {
   }
 
   return (
-    <div className="w-full">
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CohortBadge />
-            <h1 className="mt-4 text-4xl font-black tracking-[-0.05em] text-[var(--brand-dark-blue)] sm:text-5xl">
-              Good to see you, {user.display_name.split(" ")[0]}.
-            </h1>
-            <p className="mt-3 text-muted-foreground">Your community learning space is ready.</p>
-          </div>
-          <Badge className="w-fit rounded-full bg-[#fff3d6] px-3 py-1 text-[#7a5200] hover:bg-[#fff3d6]">
-            <Sparkles className="mr-1 h-3.5 w-3.5" /> New community feature
-          </Badge>
-        </div>
+    <div className="w-full space-y-4">
+        <AppPageHeader title={`Good to see you, ${user.display_name.split(" ")[0]}.`} description="Your community learning space is ready." backTo="/" actions={<Badge className="h-9 rounded-lg bg-[#fff3d6] px-3 text-[#7a5200] hover:bg-[#fff3d6]"><Sparkles className="mr-1 h-3.5 w-3.5" /> New community feature</Badge>} />
 
         <Card className="overflow-hidden border-0 bg-[var(--brand-dark-blue)] text-white shadow-sm">
           <CardContent className="relative p-7 sm:p-10">

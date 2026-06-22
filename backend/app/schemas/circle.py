@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MemberUser(BaseModel):
@@ -89,7 +89,7 @@ class CheckpointView(BaseModel):
     id: uuid.UUID
     position: int
     title: str
-    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+    activity_type: Literal["review", "lesson", "quiz", "challenge", "assignment", "lab"]
     topic_key: str
     status: Literal["completed", "current", "locked"]
 
@@ -182,7 +182,7 @@ class ActivityFeedResponse(BaseModel):
 class ActivityCompletionView(BaseModel):
     id: uuid.UUID
     checkpoint_id: uuid.UUID
-    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+    activity_type: Literal["review", "lesson", "quiz", "challenge", "assignment", "lab"]
     points_awarded: int
     completed_at: datetime
 
@@ -225,7 +225,7 @@ class WorkspaceNote(BaseModel):
 
 class PlannedCheckpoint(BaseModel):
     topic_key: str
-    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+    activity_type: Literal["review", "lesson", "quiz", "challenge", "assignment", "lab"]
 
 
 class PlannedRoadmapView(BaseModel):
@@ -244,7 +244,7 @@ class MentorWorkspaceResponse(BaseModel):
 
 class PublishRoadmapCheckpoint(BaseModel):
     topic_key: str
-    activity_type: Literal["review", "lesson", "quiz", "challenge"]
+    activity_type: Literal["review", "lesson", "quiz", "challenge", "assignment", "lab"]
 
 
 class PublishRoadmapRequest(BaseModel):
@@ -270,6 +270,16 @@ class CircleLeaderboardResponse(BaseModel):
 class CreateCircleRequest(BaseModel):
     name: str
     description: str
+    chapter_key: Literal[
+        "real_numbers",
+        "algebraic_expressions",
+        "linear_equations",
+        "geometry",
+        "trigonometry",
+    ]
+    actions: list[Literal["review", "quiz", "assignment", "lab"]] = Field(
+        min_length=1, max_length=5
+    )
 
 
 class LeaveCircleResponse(BaseModel):
@@ -279,5 +289,4 @@ class LeaveCircleResponse(BaseModel):
 
 class CircleMembersResponse(BaseModel):
     members: list[MemberUser]
-
 

@@ -141,7 +141,7 @@ class RoadmapCheckpoint(Base):
     __tablename__ = "roadmap_checkpoints"
     __table_args__ = (
         CheckConstraint("position >= 0", name="position"),
-        CheckConstraint("activity_type IN ('review', 'lesson', 'quiz', 'challenge')", name="activity_type"),
+        CheckConstraint("activity_type IN ('review', 'lesson', 'quiz', 'challenge', 'assignment', 'lab')", name="activity_type"),
         UniqueConstraint(
             "roadmap_id", "position", name="uq_roadmap_checkpoints_roadmap_position"
         ),
@@ -190,7 +190,7 @@ class ActivityCompletion(Base):
     __tablename__ = "activity_completions"
     __table_args__ = (
         CheckConstraint(
-            "activity_type IN ('review', 'lesson', 'quiz', 'challenge')",
+            "activity_type IN ('review', 'lesson', 'quiz', 'challenge', 'assignment', 'lab')",
             name="activity_type",
         ),
         CheckConstraint("points_awarded = 30", name="points_awarded"),
@@ -280,4 +280,3 @@ class MentorTerm(Base):
     final_rank: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
     final_points: Mapped[int] = mapped_column(Integer, nullable=False)
     selected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-

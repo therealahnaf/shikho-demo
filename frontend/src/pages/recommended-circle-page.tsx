@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
-import { CohortBadge } from "@/components/app-shell";
+import { AppPageHeader, pageActionClassName } from "@/components/app-page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,14 +38,8 @@ export function RecommendedCirclePage() {
 
   const circle = recommendationQuery.data.data;
   return (
-    <div className="w-full py-4">
-        <div className="text-center">
-          <CohortBadge />
-          <h1 className="mt-5 text-4xl font-black tracking-[-0.05em] text-[var(--brand-dark-blue)] sm:text-5xl">
-            Your recommended circle
-          </h1>
-          <p className="mt-3 text-muted-foreground">Matched using your current class and subject.</p>
-        </div>
+    <div className="w-full space-y-4 py-4">
+        <AppPageHeader title="Your recommended circle" description="Matched using your current class and subject." backTo="/app/study-circle/intro" actions={circle ? <Button className={pageActionClassName} onClick={() => joinMutation.mutate(circle.id)} disabled={joinMutation.isPending}>{joinMutation.isPending ? "Joining…" : "Join circle"}{!joinMutation.isPending ? <ArrowRight /> : null}</Button> : undefined} />
 
         {!circle ? (
           <Alert className="mx-auto mt-9 max-w-xl">
@@ -95,10 +89,6 @@ export function RecommendedCirclePage() {
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><UsersRound className="h-4 w-4" /> {circle.member_count} students</p>
-                <Button size="lg" onClick={() => joinMutation.mutate(circle.id)} disabled={joinMutation.isPending}>
-                  {joinMutation.isPending ? "Joining…" : "Join circle"}
-                  {!joinMutation.isPending ? <ArrowRight /> : null}
-                </Button>
               </div>
             </CardContent>
           </Card>

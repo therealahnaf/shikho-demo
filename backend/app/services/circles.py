@@ -217,6 +217,29 @@ async def circle_home(
             DailyQuest.local_date == local_now.date(),
         )
     )
+    if quest is None:
+        # The demo does not run a midnight scheduler. Materialize today's quest
+        # on first access so an otherwise healthy circle never becomes
+        # unavailable just because its previous daily quest expired.
+        await session.execute(
+            pg_insert(DailyQuest)
+            .values(
+                id=uuid.uuid4(),
+                circle_id=circle.id,
+                local_date=local_now.date(),
+                title="Complete 5 roadmap activities today",
+                target=5,
+                progress=0,
+            )
+            .on_conflict_do_nothing(index_elements=["circle_id", "local_date"])
+        )
+        await session.commit()
+        quest = await session.scalar(
+            select(DailyQuest).where(
+                DailyQuest.circle_id == circle.id,
+                DailyQuest.local_date == local_now.date(),
+            )
+        )
     cycle = await session.scalar(
         select(WeeklyCycle).where(
             WeeklyCycle.circle_id == circle.id,
@@ -371,6 +394,8 @@ async def circle_home(
 
 TOPIC_NAMES = {
     "algebra_basics": "Algebra Basics",
+    "algebraic_expressions": "Algebraic Expressions",
+    "real_numbers": "Real Numbers",
     "linear_equations": "Linear Equations",
     "geometry": "Geometry",
     "trigonometry": "Trigonometry",
@@ -391,6 +416,10 @@ def generate_checkpoint_title(topic_key: str, activity_type: str) -> str:
         if topic_key == "weekly_challenge" or topic_key == "revision":
             return "Weekly Algebra Challenge"
         return f"Weekly {topic_name} Challenge"
+    elif activity_type == "assignment":
+        return f"Complete {topic_name} Assignment"
+    elif activity_type == "lab":
+        return f"Explore {topic_name} Lab"
     return f"{activity_type.title()} {topic_name}"
 
 
@@ -594,7 +623,7 @@ async def get_mentor_workspace(
             selected_at=term.selected_at,
         ),
         topics=topics,
-        activity_types=["review", "lesson", "quiz", "challenge"],
+        activity_types=["review", "lesson", "quiz", "challenge", "assignment", "lab"],
         notes=workspace_notes,
         planned_roadmap=planned_roadmap,
     )
@@ -911,7 +940,12 @@ async def list_circles_service(
 
 
 async def create_circle_service(
-    session: AsyncSession, user: DemoUser, name: str, description: str
+    session: AsyncSession,
+    user: DemoUser,
+    name: str,
+    description: str,
+    chapter_key: str,
+    actions: list[str],
 ) -> JoinCircleResponse:
     # 1. Create circle
     circle = Circle(
@@ -985,7 +1019,7 @@ async def create_circle_service(
     roadmap = Roadmap(
         id=uuid.uuid4(),
         weekly_cycle_id=active_cycle.id,
-        title="Syllabus Foundations",
+        title=f"{TOPIC_NAMES.get(chapter_key, chapter_key.replace('_', ' ').title())} Weekly Roadmap",
         status="published",
         published_at=periods["week_start"],
         created_by_user_id=user.id,
@@ -993,19 +1027,14 @@ async def create_circle_service(
     session.add(roadmap)
     await session.flush()
 
-    checkpoints_to_add = [
-        ("Review Algebra Basics", "review", "algebra_basics"),
-        ("Explore Linear Equations", "lesson", "linear_equations"),
-        ("Practice Quiz", "quiz", "linear_equations"),
-    ]
-    for position, (title, activity_type, topic_key) in enumerate(checkpoints_to_add):
+    for position, activity_type in enumerate(actions):
         cp = RoadmapCheckpoint(
             id=uuid.uuid4(),
             roadmap_id=roadmap.id,
             position=position,
-            title=title,
+            title=generate_checkpoint_title(chapter_key, activity_type),
             activity_type=activity_type,
-            topic_key=topic_key,
+            topic_key=chapter_key,
         )
         session.add(cp)
 
@@ -1018,6 +1047,17 @@ async def create_circle_service(
         dedupe_key=f"join:{circle.id}:{user.id}",
     )
     session.add(event)
+
+    session.add(
+        ActivityEvent(
+            id=uuid.uuid4(),
+            circle_id=circle.id,
+            actor_user_id=user.id,
+            event_type="mentor_selected",
+            payload={"mentor_name": user.display_name, "reason": "circle_creator"},
+            dedupe_key=f"mentor_selected:{circle.id}:{active_cycle.id}",
+        )
+    )
 
     await session.commit()
 
@@ -1086,7 +1126,4 @@ async def get_circle_members(
     return CircleMembersResponse(
         members=[MemberUser(id=u.id, username=u.username, display_name=u.display_name) for u in rows]
     )
-
-
-
 

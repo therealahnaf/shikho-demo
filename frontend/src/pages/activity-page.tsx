@@ -4,16 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { AppPageError, AppPageLoading } from "@/components/app-page-state";
+import { AppPageHeader } from "@/components/app-page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +21,8 @@ const actionLabels: Record<ActivityType, string> = {
   lesson: "Finish simulated lesson",
   quiz: "Complete simulation",
   challenge: "Complete weekly challenge",
+  assignment: "Submit simulated assignment",
+  lab: "Complete simulated lab",
 };
 
 function SimulationBody({
@@ -75,10 +70,15 @@ function SimulationBody({
       </div>
     );
   }
+  const confirmationTitle = type === "assignment"
+    ? "I have completed this simulated assignment"
+    : type === "lab"
+      ? "I have completed this simulated lab"
+      : "I’m ready to complete this weekly challenge";
   return (
     <Label htmlFor="challenge-confirmation" className="flex cursor-pointer items-start gap-3 rounded-xl bg-[#eef3ff] p-4 text-foreground">
       <Checkbox id="challenge-confirmation" checked={confirmed} onCheckedChange={(value) => setConfirmed(value === true)} />
-      <span><span className="block font-semibold">I’m ready to complete this weekly challenge</span><span className="mt-1 block text-sm font-normal leading-6 text-muted-foreground">This confirmation records one simulated roadmap completion for the community.</span></span>
+      <span><span className="block font-semibold">{confirmationTitle}</span><span className="mt-1 block text-sm font-normal leading-6 text-muted-foreground">This confirmation records one simulated roadmap completion for the community.</span></span>
     </Label>
   );
 }
@@ -150,28 +150,12 @@ export function ActivityPage() {
   const checkpoint = roadmapQuery.data.roadmap.checkpoints.find((item) => item.id === checkpointId);
   if (!checkpoint) return <AppPageError onRetry={() => void roadmapQuery.refetch()} />;
 
-  const prerequisiteMissing = checkpoint.activity_type === "quiz" ? !answer : checkpoint.activity_type === "challenge" ? !confirmed : false;
+  const prerequisiteMissing = checkpoint.activity_type === "quiz" ? !answer : ["challenge", "assignment", "lab"].includes(checkpoint.activity_type) ? !confirmed : false;
   const conflict = mutation.error instanceof ApiError && ["checkpoint_already_completed", "checkpoint_locked"].includes(mutation.error.code);
 
   return (
     <div className="w-full space-y-4">
-        <Breadcrumb>
-          <BreadcrumbList className="text-xs">
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to="/app/study-circle/lobby">StudyCircle</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}`}>{roadmapQuery.data.circle.name}</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild><Link to={`/app/study-circle/${circleId}/roadmap`}>Roadmap</Link></BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>{checkpoint.title}</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        <AppPageHeader title={result ? "Checkpoint complete" : checkpoint.title} description={result ? "Your circle progress has been updated." : `${checkpoint.activity_type} simulation`} backTo={`/app/study-circle/${circleId}/roadmap`} />
         {result ? <CompletionSummary result={result} circleId={circleId} /> : (
           <Card className="border-0 shadow-sm">
             <CardHeader className="p-5">

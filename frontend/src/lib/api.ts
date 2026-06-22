@@ -24,7 +24,7 @@ export type CreateUserInput = {
 
 export type MemberUser = Pick<User, "id" | "username" | "display_name">;
 
-export type ActivityType = "review" | "lesson" | "quiz" | "challenge";
+export type ActivityType = "review" | "lesson" | "quiz" | "challenge" | "assignment" | "lab";
 
 export type Checkpoint = {
   id: string;
@@ -360,12 +360,17 @@ export const api = {
   getCircles() {
     return request<CircleLeaderboardResponse>("/api/v1/circles", {}, true);
   },
-  createCircle(name: string, description: string) {
+  createCircle(
+    name: string,
+    description: string,
+    chapterKey: string,
+    actions: Array<"review" | "quiz" | "assignment" | "lab">,
+  ) {
     return request<{ membership: Membership; circle_home_path: string }>(
       "/api/v1/circles",
       {
         method: "POST",
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ name, description, chapter_key: chapterKey, actions }),
       },
       true,
     );
@@ -447,4 +452,3 @@ export type CircleLeaderboardEntry = {
 export type CircleLeaderboardResponse = {
   circles: CircleLeaderboardEntry[];
 };
-
