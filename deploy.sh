@@ -18,12 +18,8 @@ source "${ENV_FILE}"
 set +a
 
 required=(
-  GITHUB_REPOSITORY
-  GITHUB_BRANCH
-  DEPLOY_DIRECTORY
-  POSTGRES_DB
-  POSTGRES_USER
-  POSTGRES_PASSWORD
+  GITHUB_PAT
+  DATABASE_URL
   FRONTEND_PUBLIC_URL
   BACKEND_PUBLIC_URL
   CLOUDFLARE_FRONTEND_TUNNEL_TOKEN
@@ -37,6 +33,24 @@ for variable in "${required[@]}"; do
   fi
 done
 
+REPOSITORY_URL="https://github.com/therealahnaf/shikho-demo.git"
+BRANCH="main"
+APP_DIR="/opt/studycircle"
+
+db_authority_path="${DATABASE_URL#*://}"
+db_credentials="${db_authority_path%%@*}"
+db_host_path="${db_authority_path#*@}"
+
+if [[ "${db_credentials}" == "${db_authority_path}" || "${db_credentials}" != *:* || "${db_host_path}" != */* ]]; then
+  echo "DATABASE_URL must look like postgresql+psycopg://user:password@db:5432/database." >&2
+  exit 1
+fi
+
+export POSTGRES_USER="${db_credentials%%:*}"
+export POSTGRES_PASSWORD="${db_credentials#*:}"
+export POSTGRES_DB="${db_host_path#*/}"
+POSTGRES_DB="${POSTGRES_DB%%\?*}"
+
 if ! command -v git >/dev/null 2>&1; then
   echo "git is required." >&2
   exit 1
@@ -47,12 +61,6 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
-read -r -s -p "GitHub PAT (fine-grained, read-only repository access): " GITHUB_PAT
-echo
-if [[ -z "${GITHUB_PAT}" ]]; then
-  echo "A GitHub PAT is required for this deployment workflow." >&2
-  exit 1
-fi
 export GITHUB_PAT
 trap 'unset GITHUB_PAT' EXIT
 
@@ -63,30 +71,22 @@ git_with_pat() {
     "$@"
 }
 
-repository="${GITHUB_REPOSITORY%.git}"
-if [[ "${repository}" == https://github.com/* ]]; then
-  repository_url="${repository}.git"
-else
-  repository_url="https://github.com/${repository}.git"
-fi
+mkdir -p "$(dirname -- "${APP_DIR}")"
 
-app_dir="${DEPLOY_DIRECTORY}"
-mkdir -p "$(dirname -- "${app_dir}")"
-
-if [[ -d "${app_dir}/.git" ]]; then
-  echo "Updating ${app_dir} from ${GITHUB_BRANCH}..."
-  git_with_pat -C "${app_dir}" fetch origin "${GITHUB_BRANCH}"
-  git_with_pat -C "${app_dir}" pull --ff-only origin "${GITHUB_BRANCH}"
+if [[ -d "${APP_DIR}/.git" ]]; then
+  echo "Updating ${APP_DIR} from ${BRANCH}..."
+  git_with_pat -C "${APP_DIR}" fetch origin "${BRANCH}"
+  git_with_pat -C "${APP_DIR}" pull --ff-only origin "${BRANCH}"
 else
-  if [[ -e "${app_dir}" ]] && [[ -n "$(ls -A "${app_dir}" 2>/dev/null)" ]]; then
-    echo "${app_dir} exists and is not an empty Git repository." >&2
+  if [[ -e "${APP_DIR}" ]] && [[ -n "$(ls -A "${APP_DIR}" 2>/dev/null)" ]]; then
+    echo "${APP_DIR} exists and is not an empty Git repository." >&2
     exit 1
   fi
-  echo "Cloning ${repository} into ${app_dir}..."
-  git_with_pat clone --branch "${GITHUB_BRANCH}" --single-branch "${repository_url}" "${app_dir}"
+  echo "Cloning ${REPOSITORY_URL} into ${APP_DIR}..."
+  git_with_pat clone --branch "${BRANCH}" --single-branch "${REPOSITORY_URL}" "${APP_DIR}"
 fi
 
-compose=(docker compose --env-file "${ENV_FILE}" -f "${app_dir}/docker-compose.yml")
+compose=(docker compose --env-file "${ENV_FILE}" -f "${APP_DIR}/docker-compose.yml")
 
 echo "Pulling base service images..."
 "${compose[@]}" pull db cloudflared-backend cloudflared-frontend
@@ -114,10 +114,8 @@ fi
 echo "Applying database migrations..."
 "${compose[@]}" run --rm --no-deps backend uv run alembic upgrade head
 
-if [[ "${SEED_DATA:-true}" == "true" ]]; then
-  echo "Loading idempotent seed data..."
-  "${compose[@]}" run --rm --no-deps backend uv run python -m app.scripts.seed_demo
-fi
+echo "Loading idempotent seed data..."
+"${compose[@]}" run --rm --no-deps backend uv run python -m app.scripts.seed_demo
 
 echo "Starting application and Cloudflare tunnels..."
 "${compose[@]}" up -d --remove-orphans --wait --wait-timeout 180

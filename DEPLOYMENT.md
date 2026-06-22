@@ -3,8 +3,8 @@
 This deployment runs five services in one Docker Compose project:
 
 - `db`: private PostgreSQL 16 database with a persistent named volume.
-- `backend`: FastAPI/Uvicorn on the private Docker network and `127.0.0.1:8000`.
-- `frontend`: Nginx serving the React build on the private Docker network and `127.0.0.1:8080`.
+- `backend`: FastAPI/Uvicorn on the private Docker network and `127.0.0.1:18400`.
+- `frontend`: Nginx serving the React build on the private Docker network and `127.0.0.1:18473`.
 - `cloudflared-backend`: remotely managed tunnel connector for the API.
 - `cloudflared-frontend`: remotely managed tunnel connector for the web application.
 
@@ -12,7 +12,7 @@ PostgreSQL is not published on a host port. The frontend and backend ports bind 
 
 ## VM prerequisites
 
-Install Git, Docker Engine, and the Docker Compose v2 plugin. The deployment user must be able to run `docker` and write to `DEPLOY_DIRECTORY`.
+Install Git, Docker Engine, and the Docker Compose v2 plugin. The deployment user must be able to run `docker` and write to `/opt/studycircle`.
 
 For `/opt/studycircle`, prepare the directory once:
 
@@ -40,13 +40,15 @@ openssl rand -hex 32
 
 `FRONTEND_PUBLIC_URL` and `BACKEND_PUBLIC_URL` must be the final HTTPS origins without trailing slashes. The frontend API URL is compiled into the Vite build, while the frontend origin is used by FastAPI CORS. Changing either URL requires running `deploy.sh` again.
 
-Do not put the GitHub PAT in `.env`. The script requests it silently on every deployment and only exposes it to the Git credential helper for the current process.
+The deployment uses the fixed repository `therealahnaf/shikho-demo`, branch `main`, and directory `/opt/studycircle`. Put the GitHub PAT in `.env` and protect the file with `chmod 600`.
 
 For a private repository, use a fine-grained GitHub PAT scoped to the selected repository with read-only **Contents** access.
 
 ## Cloudflare setup
 
 Create two remotely managed Cloudflare Tunnels in Cloudflare Zero Trust.
+
+Cloudflare initially shows a `cloudflared service install <token>` command while it waits for a connector. Do not run that command for this deployment. Put each token in `.env`; the two Compose `cloudflared` services are the connectors. After deployment marks each tunnel healthy, open the tunnel and add its published application/public hostname route.
 
 ### Frontend tunnel
 
@@ -79,16 +81,16 @@ chmod +x deploy.sh
 
 The script:
 
-1. Prompts for the GitHub PAT without echoing it.
-2. Clones the configured branch on first deployment or performs a fast-forward pull later.
+1. Reads the GitHub PAT from the protected `.env` file.
+2. Clones `main` on first deployment or performs a fast-forward pull later.
 3. Pulls and builds the container images.
 4. Starts PostgreSQL and waits for readiness.
 5. Applies all Alembic migrations.
-6. Runs the idempotent seed command when `SEED_DATA=true`.
+6. Runs the idempotent seed command.
 7. Starts or replaces the backend, frontend, and tunnel connectors.
 8. Waits for container health checks before reporting success.
 
-Run the same script for every rebuild or redeployment. Application data persists in the `${COMPOSE_PROJECT_NAME}_postgres-data` Docker volume.
+Run the same script for every rebuild or redeployment. Application data persists in the `studycircle_postgres-data` Docker volume.
 
 Never run `docker compose down -v` unless database deletion is intentional.
 
@@ -101,6 +103,6 @@ docker compose --env-file /path/to/.env ps
 docker compose --env-file /path/to/.env logs -f backend
 docker compose --env-file /path/to/.env logs -f cloudflared-backend
 docker compose --env-file /path/to/.env logs -f cloudflared-frontend
-curl http://127.0.0.1:8000/health/ready
-curl http://127.0.0.1:8080/healthz
+curl http://127.0.0.1:18400/health/ready
+curl http://127.0.0.1:18473/healthz
 ```

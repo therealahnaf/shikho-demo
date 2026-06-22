@@ -7,7 +7,6 @@ import { AppResolverPage } from "@/pages/app-resolver-page";
 import { CircleHomePage } from "@/pages/circle-home-page";
 import { HomePage } from "@/pages/home-page";
 import { JoinedCirclePage } from "@/pages/joined-circle-page";
-import { LandingPage } from "@/pages/landing-page";
 import { LeaderboardPage } from "@/pages/leaderboard-page";
 import { LoginPage } from "@/pages/login-page";
 import { LobbyPage } from "@/pages/lobby-page";
@@ -25,7 +24,7 @@ import { ExploreCirclesPage } from "@/pages/explore-circles-page";
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/access-key" element={<AccessKeyPage />} />
       <Route path="/login" element={<LoginPage />} />

@@ -218,7 +218,7 @@ export function CircleHomePage() {
 
   const handleCompleteTour = () => {
     setTourStep(null);
-    localStorage.setItem("shikho_circle_dashboard_tutorial_completed", "true");
+    localStorage.setItem(`shikho_circle_dashboard_tutorial_completed_${user.username}`, "true");
   };
 
   const scrollToStep = (index: number) => {
@@ -246,7 +246,7 @@ export function CircleHomePage() {
 
   useEffect(() => {
     if (homeQuery.data) {
-      const completed = localStorage.getItem("shikho_circle_dashboard_tutorial_completed");
+      const completed = localStorage.getItem(`shikho_circle_dashboard_tutorial_completed_${user.username}`);
       if (!completed) {
         const timer = setTimeout(() => {
           setTourStep(0);
@@ -254,7 +254,7 @@ export function CircleHomePage() {
         return () => clearTimeout(timer);
       }
     }
-  }, [homeQuery.data]);
+  }, [homeQuery.data, user.username]);
 
   useEffect(() => {
     if (homeQuery.error instanceof ApiError && homeQuery.error.status === 403) {
